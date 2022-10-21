@@ -36,6 +36,7 @@ let DrawingObject: {
   }
 }|null = null
 let DrawingScene:THREE.Scene|null = null;
+let SelectedObject:THREE.Mesh|null = null;
 
 type canvasFunctionsProps={
   updateSelected: (index: string|null) => void;
@@ -51,14 +52,18 @@ function Box(props: JSX.IntrinsicElements['mesh']) {
   // Rotate mesh every frame, this is outside of React without overhead
   // useFrame((state, delta) => (ref.current.rotation.x += 0.01))
 
+  // useEffect(()=>{
+  //   SelectedObject = ref.current
+  // },[])
   return (
     <mesh
       {...props}
       ref={ref}
       scale={clicked ? 1.5 : 1}
-      onClick={(event) => click(!clicked)}
-      onPointerOver={(event) => hover(true)}
-      onPointerOut={(event) => hover(false)}>
+      onClick={(event) => SelectedObject = ref.current}
+      // onPointerOver={(event) => hover(true)}
+      // onPointerOut={(event) => hover(false)}
+      >
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
     </mesh>
@@ -275,6 +280,27 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
     }
     mouse.x = (mousePos.x / window.innerWidth) * 2 - 1;
     mouse.y = -(mousePos.y / window.innerHeight) * 2 + 1;
+
+    if (SelectedObject) {
+      raycaster.setFromCamera(mouse, camera);
+      const intersections = raycaster.intersectObject(SelectedObject);
+      if (intersections && intersections.length) {
+        console.log(intersections[0].face?.normal);
+        if(intersections[0].face&&intersections[0].face!==undefined){
+          let newpoint:THREE.Vector3|undefined = intersections[0].point.add( intersections[0].face.normal.multiplyScalar( 0.01 ) );
+          let tempPoint = newpoint.toArray();
+          setRenderPoints((prev) => [...prev, tempPoint]);
+          let temparr = renderPoints;
+          temparr.push(tempPoint);
+          if (lineNumber) {
+            setPoints((prev) => ({ ...prev, [lineNumber]: temparr }))
+          }
+        }
+      }
+      
+      return
+    }
+
     planeNormal.copy(camera.position).normalize();
     //depth code and plane position
     
@@ -507,6 +533,7 @@ export default function SketchingCanvas() {
         </div>
     </div>
     <Canvas 
+    onPointerMissed={()=>SelectedObject=null}
     tabIndex={0}
     onKeyDown={(e)=>{
       // console.log(e.code,Selected)
@@ -555,7 +582,8 @@ export default function SketchingCanvas() {
     // onClick={(e)=>{objectClicked=false}}
     >
       <Sketch loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
-      <OrthographicCamera zoom={80} makeDefault position={[0, 0, 10]} />
+      <OrthographicCamera zoom={80}
+       makeDefault position={[0, 0, 10]} />
       {/* <OrbitControls  
       domElement={document.getElementById('CanvasControls') as HTMLElement}
       /> */}
@@ -573,6 +601,7 @@ export default function SketchingCanvas() {
       <pointLight position={[-10, -10, -10]} />
       {/* <Box position={[-1.2, 0, 0]} />
       <Box position={[1.2, 0, 0]} /> */}
+      <Box position={[-1.2, 0, 0]} />
       <gridHelper visible={showGrid} />
     </Canvas>
     </> 
