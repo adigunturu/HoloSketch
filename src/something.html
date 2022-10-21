@@ -1,0 +1,315 @@
+<html lang="en">
+  <head>
+    <title>three.js ar - paint</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.js"></script>
+    <script src="https://rawcdn.githack.com/kripken/ammo.js/99d0ec0b1e26d7ccc13e013caba8e8a5c98d953b/builds/ammo.js"></script>
+    <!--     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>     -->
+  </head>
+  <body>
+    <script>
+        // import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js";
+        // import { TubePainter } from "https://threejs.org/examples/jsm/misc/TubePainter.js";
+
+        Ammo().then(function(Ammo) {
+
+        let container;
+        let camera, scene, renderer;
+        let controller, painter;
+        let painting = false
+
+        let cursor = new THREE.Vector3();
+        let mouse = new THREE.Vector2();
+        let raycaster = new THREE.Raycaster();
+
+        // Physics variables
+        var gravityConstant = -9.8;
+        var collisionConfiguration;
+        var dispatcher;
+        var broadphase;
+        var solver;
+        var physicsWorld;
+        var rigidBodies = [];
+        var margin = 0.05;
+        var hinge;
+        var rope;
+        var transformAux1 = new Ammo.btTransform();
+        var time = 0;
+        var armMovement = 0;
+        let softBodySolver
+        var clock = new THREE.Clock();
+
+
+        let start 
+        let end 
+        let tubes = []
+          
+        window.tubes = tubes
+        window.scene = scene
+
+        let tubePositions = []
+        var tubeIndices = [];
+        var tubeGeometry = new THREE.BufferGeometry();
+        var tubeMaterial = new THREE.LineBasicMaterial( { color: 0xffffff } );          
+        let tube = new THREE.LineSegments(tubeGeometry, tubeMaterial);
+        let i = 0
+          
+        init();
+        initPhysics()
+        animate();
+          
+
+        function init() {
+          container = document.createElement("div");
+          document.body.appendChild(container);
+          scene = new THREE.Scene();
+          camera = new THREE.PerspectiveCamera(
+            70,
+            window.innerWidth / window.innerHeight,
+            0.01,
+            20
+          );
+          camera.position.set(1, 1, 1);
+          camera.lookAt(0, 0, 0)
+          camera.up.set( 0, 0, 1 );
+
+          window.scene = scene
+
+          const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+          light.position.set(0, 1, 0);
+          scene.add(light);
+
+          renderer = new THREE.WebGLRenderer();
+          renderer.setPixelRatio( window.devicePixelRatio );
+          renderer.setSize( window.innerWidth, window.innerHeight );
+          renderer.shadowMap.enabled = true;
+          container.appendChild(renderer.domElement);
+
+//           painter = new TubePainter();
+//           painter.setSize(0.4);
+//           painter.mesh.material.side = THREE.DoubleSide;
+//           scene.add(painter.mesh);
+
+          function getPosition(event) {
+            mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+            mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+          	raycaster.setFromCamera( mouse, camera );
+            let origin = raycaster.ray.origin
+            let direction = raycaster.ray.direction
+            cursor.set(
+              origin.x + 1 * direction.x,
+              origin.y + 1 * direction.y,
+              origin.z + 1 * direction.z,
+            )
+          	// const intersects = raycaster.intersectObjects( scene.children );
+          	// for ( let i = 0; i < intersects.length; i ++ ) {
+          	// intersects[ i ].object.material.color.set( 0xff0000 );
+          	// }
+          }
+
+          
+          function initTube() {
+            tubePositions = []
+            tubeIndices = [];
+            tubeGeometry = new THREE.BufferGeometry();
+            tubeMaterial = new THREE.LineBasicMaterial( { color: 0xffffff } );          
+            tube = new THREE.LineSegments(tubeGeometry, tubeMaterial);
+            tube.castShadow = true;
+            tube.receiveShadow = true;
+            scene.add(tube);          
+            i = 0            
+          }
+          
+          function updateTube() {
+            tubeGeometry.setIndex(new THREE.BufferAttribute(new Uint16Array(tubeIndices), 1));
+            tubeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(tubePositions), 3));
+            tubeGeometry.computeBoundingSphere();
+            tube.geometry = tubeGeometry
+            // tube.geometry.attributes.position.needsUpdate = true            
+          }          
+                    
+          window.addEventListener('mousedown', (event) => {
+            getPosition(event)
+            painting = true
+            let x = event.clientX
+            let y = event.clientY
+            // painter.moveTo(cursor);
+            start = cursor.clone()
+            initTube()
+            tubePositions.push(cursor.x, cursor.y, cursor.z)
+            tubePositions.push(cursor.x, cursor.y, cursor.z)
+            tubeIndices.push(i, i + 1);
+            i = i + 1
+          })
+
+          window.addEventListener('mousemove', (event) => {
+            getPosition(event)
+            if (!painting) return
+            // painter.lineTo(cursor);
+            // painter.update();
+            tubePositions.push(cursor.x, cursor.y, cursor.z)
+            tubeIndices.push(i, i + 1);
+            i = i + 1
+            updateTube()
+          })
+
+          window.addEventListener('mouseup', (event) => {
+            getPosition(event)
+            console.log(event)
+            painting = false
+            end = cursor.clone()
+            updateTube()
+            
+            var ropeMass = 3; 
+            var softBodyHelpers = new Ammo.btSoftBodyHelpers();
+            var ropeStart = new Ammo.btVector3(start.x, start.y, start.z);
+            var ropeEnd = new Ammo.btVector3(end.x, end.y, end.z);
+            console.log(start, end)
+            let fixedPoints = 1
+            var ropeSoftBody = softBodyHelpers.CreateRope(physicsWorld.getWorldInfo(), ropeStart, ropeEnd, tubeIndices.length, fixedPoints);
+            var sbConfig = ropeSoftBody.get_m_cfg();
+            sbConfig.set_viterations(10);
+            sbConfig.set_piterations(10);
+            ropeSoftBody.setTotalMass(ropeMass, false)
+            Ammo.castObject(ropeSoftBody, Ammo.btCollisionObject ).getCollisionShape().setMargin( margin * 3 );
+            physicsWorld.addSoftBody(ropeSoftBody, 1, -1);
+            tube.userData.physicsBody = ropeSoftBody;
+            // Disable deactivation
+            ropeSoftBody.setActivationState( 4 );
+            tubes.push(tube)
+            console.log('ok 3')
+          })
+
+          window.addEventListener("resize", onWindowResize);
+        }
+
+
+        function initPhysics() {
+          // Physics configuration
+          collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+          dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
+          broadphase = new Ammo.btDbvtBroadphase();
+          solver = new Ammo.btSequentialImpulseConstraintSolver();
+          softBodySolver = new Ammo.btDefaultSoftBodySolver();
+          physicsWorld = new Ammo.btSoftRigidDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
+          physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+          physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+          console.log('ok')
+
+          
+          var ropeNumSegments = 10;
+          var ropeLength = 4;
+          var ropeMass = 3;
+          var ropePos = new THREE.Vector3(0, 0, 0)
+          var segmentLength = ropeLength / ropeNumSegments;
+          var ropeGeometry = new THREE.BufferGeometry();
+          var ropeMaterial = new THREE.LineBasicMaterial( { color: 0xffffff } );
+          var ropePositions = [];
+          var ropeIndices = [];
+          for ( var i = 0; i < ropeNumSegments + 1; i++ ) {
+            ropePositions.push( ropePos.x, ropePos.y, ropePos.z + i * segmentLength );
+          }
+          for ( var i = 0; i < ropeNumSegments; i++ ) {
+            ropeIndices.push( i, i + 1 );
+          }
+          ropeGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( ropeIndices ), 1 ) );
+          ropeGeometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( ropePositions ), 3 ) );
+          ropeGeometry.computeBoundingSphere();
+          rope = new THREE.LineSegments( ropeGeometry, ropeMaterial );
+          rope.castShadow = true;
+          rope.receiveShadow = true;
+          scene.add( rope );
+
+          // Rope physic object
+          var softBodyHelpers = new Ammo.btSoftBodyHelpers();
+          var ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
+          var ropeEnd = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z + ropeLength );
+          let fixedPoints = 1
+          var ropeSoftBody = softBodyHelpers.CreateRope( physicsWorld.getWorldInfo(), ropeStart, ropeEnd, ropeNumSegments - 1, fixedPoints);
+          var sbConfig = ropeSoftBody.get_m_cfg();
+          sbConfig.set_viterations( 10 );
+          sbConfig.set_piterations( 10 );
+          ropeSoftBody.setTotalMass( ropeMass, false )
+          Ammo.castObject( ropeSoftBody, Ammo.btCollisionObject ).getCollisionShape().setMargin( margin * 3 );
+          physicsWorld.addSoftBody( ropeSoftBody, 1, -1 );
+          rope.userData.physicsBody = ropeSoftBody;
+          // Disable deactivation
+          ropeSoftBody.setActivationState( 4 );
+          console.log('ok 2')
+        }
+
+        function onWindowResize() {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+      requestAnimationFrame(animate);
+          render()
+        }
+
+        function render() {
+          // handleController(controller);
+          var deltaTime = clock.getDelta();
+          updatePhysics(deltaTime);
+          renderer.render(scene, camera);
+        }
+
+        function updatePhysics(deltaTime) {
+          physicsWorld.stepSimulation( deltaTime, 10 );
+
+          var softBody = rope.userData.physicsBody;
+          var ropePositions = rope.geometry.attributes.position.array;
+          var numVerts = ropePositions.length / 3;
+          var nodes = softBody.get_m_nodes();
+          var indexFloat = 0;
+          for ( var i = 0; i < numVerts; i ++ ) {
+            var node = nodes.at( i );
+            var nodePos = node.get_m_x();
+            ropePositions[ indexFloat++ ] = nodePos.x();
+            ropePositions[ indexFloat++ ] = nodePos.y();
+            ropePositions[ indexFloat++ ] = nodePos.z();
+          }
+          rope.geometry.attributes.position.needsUpdate = true;
+          
+          for (let tube of tubes) {
+            var softBody = tube.userData.physicsBody;
+            var tubePositions = tube.geometry.attributes.position.array;
+            var numVerts = tubePositions.length / 3;
+            var nodes = softBody.get_m_nodes();
+            var indexFloat = 0;
+            for ( var i = 0; i < numVerts; i ++ ) {
+              var node = nodes.at(i);
+              var nodePos = node.get_m_x();
+              tubePositions[ indexFloat++ ] = nodePos.x();
+              tubePositions[ indexFloat++ ] = nodePos.y();
+              tubePositions[ indexFloat++ ] = nodePos.z();
+            }
+            tube.geometry.attributes.position.needsUpdate = true;
+          }
+          
+          /*
+          for ( var i = 0, il = rigidBodies.length; i < il; i++ ) {
+            var objThree = rigidBodies[ i ];
+            var objPhys = objThree.userData.physicsBody;
+            var ms = objPhys.getMotionState();
+            if ( ms ) {
+              ms.getWorldTransform( transformAux1 );
+              var p = transformAux1.getOrigin();
+              var q = transformAux1.getRotation();
+              objThree.position.set( p.x(), p.y(), p.z() );
+              objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+            }
+          }
+          */
+        }
+
+        })
+    </script>
+  </body>
+</html>
