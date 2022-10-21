@@ -115,7 +115,7 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
 
   useEffect(() => {
     if (transform !== undefined) {
-      console.log('applying transform', transform)
+      // console.log('applying transform', transform)
       ref.current.applyMatrix4(transform)
     }
   }, [])
@@ -296,7 +296,8 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
       setPoints((prev)=>({...prev,[lineNumber]:temparr}))
     }
   },[mousePos]);
-  useEffect(()=>{console.log('deleteline',deleteLine)
+  useEffect(()=>{
+    // console.log('deleteline',deleteLine)
     if(deleteLine!==null){
       let tempObj = points
       delete tempObj[deleteLine]
@@ -310,7 +311,7 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
     if (loadLines !== null) {
       setPoints(loadLines.points);
       setTransforms(loadLines.transforms);
-      console.log(loadLines)
+      // console.log(loadLines)
     }
   }, [loadLines])
 
@@ -320,7 +321,7 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
 
   useEffect(()=>{
     DrawingObject = {points:points, transforms:transforms};
-    console.log(DrawingObject)
+    // console.log(DrawingObject)
   },[points, transforms])
   useEffect(()=>{
     DrawingScene=scene;
@@ -443,13 +444,14 @@ export default function SketchingCanvas() {
           </IconButton>
         </div>
         <div style={{display:'flex', flexDirection:'column', width:'100%', height:'100%', justifyContent:'center', alignItems:'center'}}>
+          <div style={{display:'flex', paddingTop:'20px',flexDirection:'column', justifyContent:'space-around',width:'100%', height:'100%', alignItems:'center', overflow:'scroll'}}>
           <div style={{ display: 'flex', padding: '10px', width:'50vh', alignItems:'center' }}>
             <img style={{ width: '40px', height: '40px' }} src={require("./assets/leftMouse.png")} />
-            <p style={{margin:0, marginLeft:'10px'}}>Click and drag to start sketching anywhere. Your drawings will be added to this scene.</p>
+            <p style={{margin:0, marginLeft:'10px'}}>Click and drag to start sketching anywhere. Your drawings will be added to this scene. Additionally, you can click on any line and change it's position or rotation. While a line is selected, press the delete key to remove it.</p>
           </div>
           <div style={{ display: 'flex', padding: '10px', width:'50vh', alignItems:'center' }}>
             <img style={{ width: '40px', height: '40px' }} src={require("./assets/rightMouse.png")} />
-            <p style={{margin:0, marginLeft:'10px'}}>Right click and drag rotate the view. You can pan around the scene by dragging while holding the shift key.</p>
+            <p style={{margin:0, marginLeft:'10px'}}>Right click and drag to rotate the view. You can pan around the scene by dragging while holding the shift key.</p>
           </div>
           <div style={{ display: 'flex', padding: '10px', width:'50vh', alignItems:'center' }}>
             <img style={{ width: '40px', height: '40px' }} src={require("./assets/scrollMouse.png")} />
@@ -459,7 +461,8 @@ export default function SketchingCanvas() {
             <img style={{ width: '40px', height: '40px' }} src={require("./assets/slider.png")} />
             <p style={{margin:0, marginLeft:'10px'}}>Use the slider to draw at a specific depth. Default is 0, move it up or down to draw at multiple depths from the same perspective.</p>
           </div>
-          <div style={{ display: 'flex', padding: '10px', width:'50vh', alignItems:'center', justifyContent:'space-evenly' }}>
+          </div>
+          <div style={{ display: 'flex', padding: '10px',paddingTop:'0' ,width:'50vh', alignItems:'center', justifyContent:'space-evenly' }}>
             {/* <Button 
               onClick={() => {
                 if(DrawingScene===null){
@@ -497,7 +500,7 @@ export default function SketchingCanvas() {
           </div>
 
 
-          <p style={{bottom: 0, width: "100%", textAlign: "center", marginTop: "30px"}}>Made by 
+          <p style={{bottom: 0, width: "100%", textAlign: "center", marginTop: "4px"}}>Made by 
           <a style={{color:'black', textDecorationColor:'#03dac6'}} href="https://adigunturu.com"> Aditya Gunturu</a> (and lots of ☕) using <a style={{color:'black', textDecorationColor:'#03dac6'}} href="https://threejs.org">Three.js</a>
           </p>
 
