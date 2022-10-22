@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, extend, useThree, ThreeEvent } from '@react-three/fiber'
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { CycleRaycast, GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, PerspectiveCamera, PivotControls, Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
+import { CycleRaycast, GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, PerspectiveCamera, PivotControls, RoundedBox, Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
 import Slider, {SliderValueLabelProps } from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
 //@ts-ignore
@@ -43,7 +43,7 @@ type canvasFunctionsProps={
 }
 
 let objectClicked = false;
-function Box(props: JSX.IntrinsicElements['mesh']) {
+function Box(props: {position:[number,number,number]}) {
   // This reference will give us direct access to the THREE.Mesh object
   const ref = useRef<THREE.Mesh>(null!)
   // Hold state for hovered and clicked events
@@ -56,19 +56,59 @@ function Box(props: JSX.IntrinsicElements['mesh']) {
   //   SelectedObject = ref.current
   // },[])
   return (
-    <mesh
-      {...props}
-      ref={ref}
-      scale={clicked ? 1.5 : 1}
-      onClick={(event) => SelectedObject = ref.current}
-      // onPointerOver={(event) => hover(true)}
-      // onPointerOut={(event) => hover(false)}
-      >
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
-    </mesh>
+    // <mesh
+    //   {...props}
+    //   ref={ref}
+    //   scale={clicked ? 1.5 : 1}
+    //   onClick={(event) => SelectedObject = ref.current}
+    //   // onPointerOver={(event) => hover(true)}
+    //   // onPointerOut={(event) => hover(false)}
+    //   >
+    //   <boxGeometry args={[1, 1, 1]} />
+    //   <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
+    // </mesh>
+
+    <RoundedBox ref={ref} onClick={(event) => SelectedObject = ref.current}  radius={0.5} smoothness={30} {...props}>
+      <meshStandardMaterial color="orange" />
+    </RoundedBox>
   )
 }
+
+
+function SplineLine({points}:{points:THREE.Vector3Tuple[]}){
+
+  const [mesh, setMesh] = useState<THREE.Line|null>(null)
+
+  useEffect(()=>{
+    if(!points||points===undefined||points.length===0||points.length<5){
+      return
+    }
+    const mappedPoints = points.map(pt => new THREE.Vector3(...pt));
+    const beizerPoints = customcalculator(points)
+    // console.log(mappedPoints)
+    const curve = new THREE.CubicBezierCurve3(new THREE.Vector3(...points[0]), new THREE.Vector3(...points[4]), new THREE.Vector3(...points[points.length-5]), new THREE.Vector3(...points[points.length-1]));
+    // const curvePoints = curve.getPoints( 
+    //   // mappedPoints.length
+    //   // >2?Math.round(mappedPoints.length/2):mappedPoints.length
+    //   );
+    const geometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(points.length) );
+    const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+    const curveObject = new THREE.Line( geometry, material );
+
+    // const curve = new THREE.CatmullRomCurve3(mappedPoints, false, 'chordal', 0);
+    // const curvePoints = curve.getPoints(mappedPoints.length);
+    // const geometry = new THREE.TubeGeometry( curve, undefined, 0.1, 20 );
+
+    // const material = new THREE.MeshToonMaterial( { color: 0x000000, wireframe:false } );
+    // const curveObject = new THREE.Mesh( geometry, material );
+
+    setMesh(curveObject)
+  },[points])
+
+
+  return( mesh&&<primitive object={mesh} />)
+}
+
 
 function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTransform}
   :{ 
@@ -128,6 +168,9 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
   return (
     <PivotControls
     ref={pivotRef}
+    fixed={true}
+    scale={100}
+    depthTest={false}
     autoTransform={true}
     // matrix={transform}
     onDragEnd={()=>setLocalTransform(pivotRef.current.matrix)}
@@ -136,10 +179,8 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
     disableAxes={!clicked} 
     disableSliders={!clicked} 
     disableRotations={!clicked}>
-    <Line
-    // applyMatrix4={(matrix)=>transform}
-    // matrix={transform}
 
+    <Line
     isMesh={true}
         points={points}
         opacity={hovered||clicked?0.6:1}
@@ -151,6 +192,7 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
         // raycast={MeshLineRaycast}
       />
 
+    {/* <SplineLine points={points}/> */}
 
 
 
@@ -159,13 +201,13 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
         ref={ref}
         onPointerOver={()=>!isDrawing&&hover(true)}
         onPointerOut={()=>hover(false)}>
-          // @ts-ignore 
-        <meshLine attach="geometry" points={points.flat()} isMeshLine={false} />
-        // @ts-ignore 
+          //@ts-ignore
+        <meshLine attach="geometry" points={points.flat()} isMeshLine={true} />
+        //@ts-ignore  
         <meshLineMaterial
           sizeAttenuation={1}
           attach="material"
-          lineWidth={0.05}
+          lineWidth={0.01}
           color={'black'}
           resolution={new THREE.Vector2(size.width, size.height)}
         />
@@ -403,6 +445,9 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
 }
 
 
+var timesPerSecond = 24; // how many times to fire the event per second
+var wait = false;
+
 export default function SketchingCanvas() {
   const [mousePos,setMousePoint] = useState({x:0,y:0});
   const [isMouseDown,setMouseDown] = useState(false);
@@ -575,8 +620,18 @@ export default function SketchingCanvas() {
         return
       }
       if(isMouseDown){
-        setMousePoint({x:e.clientX,y:e.clientY});
-        setIsDrawing(true)
+
+        if (!wait) {
+          // fire the event
+          setMousePoint({ x: e.clientX, y: e.clientY });
+          setIsDrawing(true)
+          // stop any further events
+          wait = true;
+          // after a fraction of a second, allow events again
+          setTimeout(function () {
+              wait = false;
+          }, 1000 / timesPerSecond);
+      } 
       }
     }}
     // onClick={(e)=>{objectClicked=false}}
@@ -598,7 +653,7 @@ export default function SketchingCanvas() {
       </GizmoHelper>
       <ambientLight intensity={0.5} />
       <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-      <pointLight position={[-10, -10, -10]} />
+      {/* <pointLight position={[-10, -10, -10]} /> */}
       {/* <Box position={[-1.2, 0, 0]} />
       <Box position={[1.2, 0, 0]} /> */}
       <Box position={[-1.2, 0, 0]} />
@@ -657,4 +712,19 @@ function downloadObjectAsJson(exportObj:{
   document.body.appendChild(downloadAnchorNode); 
   downloadAnchorNode.click();
   downloadAnchorNode.remove();
+}
+
+function customcalculator(points: THREE.Vector3Tuple[]) {
+  let arr = points;
+  let newArr: THREE.Vector3Tuple[][]=[]
+  arr.forEach((item, index) => {
+    if (index % 3 === 0) {
+      newArr.push(arr.slice(index, index + 4));
+    }
+  });
+  if(newArr.length===0){
+    return
+  }
+  console.log(newArr);
+  return newArr
 }
