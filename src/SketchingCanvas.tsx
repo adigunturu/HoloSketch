@@ -37,13 +37,14 @@ let DrawingObject: {
 }|null = null
 let DrawingScene:THREE.Scene|null = null;
 let SelectedObject:THREE.Mesh|null = null;
+let selectedObjectIndex:string|null = null;
 
 type canvasFunctionsProps={
   updateSelected: (index: string|null) => void;
 }
 
 let objectClicked = false;
-function Box(props: {position:[number,number,number]}) {
+function Box(props: {position:[number,number,number], index:string}) {
   // This reference will give us direct access to the THREE.Mesh object
   const ref = useRef<THREE.Mesh>(null!)
   // Hold state for hovered and clicked events
@@ -52,9 +53,6 @@ function Box(props: {position:[number,number,number]}) {
   // Rotate mesh every frame, this is outside of React without overhead
   // useFrame((state, delta) => (ref.current.rotation.x += 0.01))
 
-  // useEffect(()=>{
-  //   SelectedObject = ref.current
-  // },[])
   return (
     // <mesh
     //   {...props}
@@ -68,8 +66,8 @@ function Box(props: {position:[number,number,number]}) {
     //   <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
     // </mesh>
 
-    <RoundedBox ref={ref} onClick={(event) => SelectedObject = ref.current}  radius={0.5} smoothness={30} {...props}>
-      <meshStandardMaterial color="orange" />
+    <RoundedBox scale={[2,2,3]} ref={ref} onClick={(event) => {SelectedObject = ref.current; selectedObjectIndex=props.index; }}  radius={0} smoothness={30} {...props}>
+      <meshStandardMaterial  color="orange" />
     </RoundedBox>
   )
 }
@@ -294,7 +292,7 @@ var mouse = new THREE.Vector2();
 
 
 
-function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLine, loadLines}:{
+function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLine, loadLines, objectsInScene}:{
   mousePos:{x:number,y:number},
   lineNumber:string|null, 
   depth:number,
@@ -308,7 +306,8 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
     transforms:{
       [line: string]: THREE.Matrix4|undefined
     }
-  }|null
+  }|null,
+  objectsInScene:{index:string, type:'plane'|'cube'|'sphere'}[]
 }){
   const {camera, scene} = useThree();
   const [renderPoints, setRenderPoints]=useState<Array<THREE.Vector3Tuple|undefined>>([]);
@@ -327,7 +326,6 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
       raycaster.setFromCamera(mouse, camera);
       const intersections = raycaster.intersectObject(SelectedObject);
       if (intersections && intersections.length) {
-        console.log(intersections[0].face?.normal);
         if(intersections[0].face&&intersections[0].face!==undefined){
           let newpoint:THREE.Vector3|undefined = intersections[0].point.add( intersections[0].face.normal.multiplyScalar( 0.01 ) );
           let tempPoint = newpoint.toArray();
@@ -416,25 +414,21 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
   }
 
   return (
-    <>
-      {Object.keys(points).length !== 0 &&
-      
-        <Select multiple border='#000' onChange={(e)=>{setSelected(e)}}>
-        {Object.keys(points).map((keyIndex,index) =>
-            
-            <TheLine key={index} 
-            index={keyIndex} 
-            canvasFunctions={canvasFunctions} 
-            isDrawing={isDrawing} 
-            points={points[keyIndex] as THREE.Vector3Tuple[]} 
-            updateTransform={updateTransform}
-            transform={transforms[keyIndex]}
+    <> 
+      <Select multiple border='#000' onChange={(e) => { setSelected(e) }}>
+        {Object.keys(points).length !== 0 &&
+          Object.keys(points).map((keyIndex, index) => (
+            <TheLine key={index}
+              index={keyIndex}
+              canvasFunctions={canvasFunctions}
+              isDrawing={isDrawing}
+              points={points[keyIndex] as THREE.Vector3Tuple[]}
+              updateTransform={updateTransform}
+              transform={transforms[keyIndex]}
             />
-            
-          )
+          ))
         }
-        </Select>
-      }
+      </Select>
       {/* {active && <TransformControls object={active} />} */}
       {/* {renderPoints.length !== 0 &&
         renderPoints.map((item, index) => (
@@ -444,12 +438,12 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
   )
 }
 
-
 var timesPerSecond = 24; // how many times to fire the event per second
 var wait = false;
 
 export default function SketchingCanvas() {
   const [mousePos,setMousePoint] = useState({x:0,y:0});
+  const [objectsInScene,setObjectsInScene] = useState<{type:'sphere'|'cube'|'plane',index:string}[]>([]);
   const [isMouseDown,setMouseDown] = useState(false);
   const [lineNumber,setLine] = useState<string|null>(makeid(8));
   const [isDrawing,setIsDrawing] = useState(false);
@@ -468,15 +462,20 @@ export default function SketchingCanvas() {
   const [showGrid, setShowGrid] = useState(true);
 
 
-
   function updateSelected(index:string|null){
     setSelected(index);
     // console.log('selected',index);
+    selectedObjectIndex=null
+    SelectedObject=null
   };
 
   useEffect(()=>{
     // console.log(Selected)
   },[Selected])
+
+  useEffect(()=>{
+    setObjectsInScene([{type:'sphere', index:makeid(8)}])
+  },[])
 
   let canvasFunctions:canvasFunctionsProps={
     updateSelected:updateSelected,
@@ -578,7 +577,7 @@ export default function SketchingCanvas() {
         </div>
     </div>
     <Canvas 
-    onPointerMissed={()=>SelectedObject=null}
+    onPointerMissed={()=>{SelectedObject=null; selectedObjectIndex=null}}
     tabIndex={0}
     onKeyDown={(e)=>{
       // console.log(e.code,Selected)
@@ -605,10 +604,11 @@ export default function SketchingCanvas() {
       }
     }}
     onMouseUp={(e)=>{
+      setMouseDown(false);
       if(objectClicked){
         return
       }
-      setMouseDown(false);
+      
       // console.log('was drawing',isDrawing);
       if(isDrawing){
         setLine(makeid(8));
@@ -617,26 +617,29 @@ export default function SketchingCanvas() {
     }}
     onMouseMove={(e)=>{
       if(objectClicked){
+        console.log('returning cause object clicked')
         return
       }
       if(isMouseDown){
-
-        if (!wait) {
-          // fire the event
-          setMousePoint({ x: e.clientX, y: e.clientY });
-          setIsDrawing(true)
-          // stop any further events
-          wait = true;
-          // after a fraction of a second, allow events again
-          setTimeout(function () {
-              wait = false;
-          }, 1000 / timesPerSecond);
-      } 
+        setMousePoint({ x: e.clientX, y: e.clientY });
+        setIsDrawing(true)
+        // if (!wait) {
+        //   // fire the event
+        //   setMousePoint({ x: e.clientX, y: e.clientY });
+        //   setIsDrawing(true)
+        //   // stop any further events
+        //   wait = true;
+        //   // after a fraction of a second, allow events again
+        //   setTimeout(function () {
+        //     wait = false;
+        //   }, 1000 / timesPerSecond);
+        // }
       }
     }}
     // onClick={(e)=>{objectClicked=false}}
     >
-      <Sketch loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
+      <Sketch objectsInScene={objectsInScene} loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
+      {/* <ThreeDObjects canvasFunctions={canvasFunctions} isDrawing={isDrawing}  objectsInScene={objectsInScene}/> */}
       <OrthographicCamera zoom={80}
        makeDefault position={[0, 0, 10]} />
       {/* <OrbitControls  
@@ -652,15 +655,54 @@ export default function SketchingCanvas() {
         {/* alternative: <GizmoViewcube /> */}
       </GizmoHelper>
       <ambientLight intensity={0.5} />
-      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+      <spotLight position={[0, 10, 0]} angle={0.60} penumbra={1} />
       {/* <pointLight position={[-10, -10, -10]} /> */}
       {/* <Box position={[-1.2, 0, 0]} />
       <Box position={[1.2, 0, 0]} /> */}
-      <Box position={[-1.2, 0, 0]} />
+      {objectsInScene.map((item)=>(
+        <BaseObject key={item.index} item={item} isDrawing={isDrawing} index={item.index}/>
+        ))}
       <gridHelper visible={showGrid} />
     </Canvas>
     </> 
   )
+}
+
+function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string}, isDrawing:boolean, index:string}){
+  const transformref = useRef()
+  const [isDraggingPivot, setDraggingPivot] = useState(false);
+  const [clicked, setclick] = useState(false);
+  useEffect(()=>{
+    if(isDraggingPivot){
+      objectClicked=true;
+    }else{
+      objectClicked=false
+    }
+  },[isDraggingPivot]);
+
+
+  
+  return(
+  <PivotControls 
+    onDragStart={()=>setDraggingPivot(true)}
+    onDragEnd={()=>setDraggingPivot(false)}
+    fixed={true}
+    scale={100}
+    depthTest={false}
+    autoTransform={true}
+    anchor={[0, 0, 0]}
+    visible={selectedObjectIndex===props.item.index&&!props.isDrawing||isDraggingPivot}
+    disableAxes={selectedObjectIndex===props.item.index&&props.isDrawing&&!isDraggingPivot}
+    disableSliders={selectedObjectIndex===props.item.index&&props.isDrawing&&!isDraggingPivot}
+    disableRotations={selectedObjectIndex===props.item.index&&props.isDrawing&&!isDraggingPivot}>
+   {/* <TransformControls ref={transformref}
+   onMouseDown={()=>setDraggingPivot(true)}
+    onMouseUp={()=>setDraggingPivot(false)}
+    mode="scale"> */}
+    <Box index={props.item.index} position={[-1, 0, 0]} />
+  {/* // </TransformControls> */}
+     </PivotControls>
+    )
 }
 
 
