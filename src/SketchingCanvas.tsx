@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Canvas, useFrame, extend, useThree, ThreeEvent } from '@react-three/fiber'
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { CycleRaycast, GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, PerspectiveCamera, PivotControls, RoundedBox, Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
+import { CycleRaycast, GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, PerspectiveCamera, PivotControls, Plane, RoundedBox, Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
 import Slider, {SliderValueLabelProps } from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
 //@ts-ignore
@@ -21,6 +21,11 @@ import GridOffIcon from '@mui/icons-material/GridOff';
 import { IconButton } from '@mui/material';
 import Button from '@mui/material/Button';
 import { GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faGolfBall } from '@fortawesome/free-solid-svg-icons'
+import { faCube } from '@fortawesome/free-solid-svg-icons'
+import CircleIcon from '@mui/icons-material/Circle';
+import Crop54Icon from '@mui/icons-material/Crop54';
 
 // import * as meshline from 'meshline'
 extend({ MeshLine, MeshLineMaterial })
@@ -44,7 +49,7 @@ type canvasFunctionsProps={
 }
 
 let objectClicked = false;
-function Box(props: {position:[number,number,number], index:string}) {
+function Box(props: {position:[number,number,number], index:string, type:'cube'|'sphere'|'plane'}) {
   // This reference will give us direct access to the THREE.Mesh object
   const ref = useRef<THREE.Mesh>(null!)
   // Hold state for hovered and clicked events
@@ -66,9 +71,13 @@ function Box(props: {position:[number,number,number], index:string}) {
     //   <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
     // </mesh>
 
-    <RoundedBox scale={[2,2,3]} ref={ref} onClick={(event) => {SelectedObject = ref.current; selectedObjectIndex=props.index; }}  radius={0} smoothness={30} {...props}>
-      <meshStandardMaterial  color="orange" />
-    </RoundedBox>
+    props.type==='cube'||props.type==='sphere'?
+    <RoundedBox scale={props.type==='sphere'?[1.4,1.4,1.4]:[1,1,1]} ref={ref} onClick={(event) => {SelectedObject = ref.current; selectedObjectIndex=props.index; }}  radius={props.type==='sphere'?0.5:0} smoothness={30} {...props}>
+      <meshStandardMaterial  color="white" />
+    </RoundedBox>:
+    props.type==='plane'?<Plane ref={ref} onClick={(event) => {SelectedObject = ref.current; selectedObjectIndex=props.index; }} args={[2,2]} {...props}>
+      <meshStandardMaterial transparent={true} opacity={0.9} color="white" />
+    </Plane>:null
   )
 }
 
@@ -167,7 +176,7 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
     <PivotControls
     ref={pivotRef}
     fixed={true}
-    scale={100}
+    scale={60}
     depthTest={false}
     autoTransform={true}
     // matrix={transform}
@@ -576,6 +585,11 @@ export default function SketchingCanvas() {
 
         </div>
     </div>
+    <div style={{position:'absolute', top:'10px', left:'10px', display:'flex', zIndex:5}}>
+      <IconButton onClick={()=>setObjectsInScene((prev)=>[...prev, {type:'cube', index:makeid(8)}])}><FontAwesomeIcon icon={faCube} /></IconButton>
+      <IconButton onClick={()=>setObjectsInScene((prev)=>[...prev, {type:'plane', index:makeid(8)}])}><Crop54Icon fontSize='large' /></IconButton>
+      <IconButton onClick={()=>setObjectsInScene((prev)=>[...prev, {type:'sphere', index:makeid(8)}])}><CircleIcon fontSize='large'/></IconButton>
+    </div>
     <Canvas 
     onPointerMissed={()=>{SelectedObject=null; selectedObjectIndex=null}}
     tabIndex={0}
@@ -592,6 +606,15 @@ export default function SketchingCanvas() {
           setDeleteLine(null)
         }, 100);
         
+      }
+      if(selectedObjectIndex&&e.code==="Delete"){
+        let tempArr = [...objectsInScene];
+        tempArr.forEach((item,index)=>{
+          if(item.index===selectedObjectIndex){
+            tempArr.splice(index,1)
+          }
+        });
+        setObjectsInScene(tempArr);
       }
     }}
     onMouseDown={(e)=>{
@@ -641,7 +664,7 @@ export default function SketchingCanvas() {
       <Sketch objectsInScene={objectsInScene} loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
       {/* <ThreeDObjects canvasFunctions={canvasFunctions} isDrawing={isDrawing}  objectsInScene={objectsInScene}/> */}
       <OrthographicCamera zoom={80}
-       makeDefault position={[0, 0, 10]} />
+       makeDefault position={[10, 4, 4]} />
       {/* <OrbitControls  
       domElement={document.getElementById('CanvasControls') as HTMLElement}
       /> */}
@@ -655,7 +678,7 @@ export default function SketchingCanvas() {
         {/* alternative: <GizmoViewcube /> */}
       </GizmoHelper>
       <ambientLight intensity={0.5} />
-      <spotLight position={[0, 10, 0]} angle={0.60} penumbra={1} />
+      <spotLight position={[20, 4, 10]} angle={0.60} penumbra={1} />
       {/* <pointLight position={[-10, -10, -10]} /> */}
       {/* <Box position={[-1.2, 0, 0]} />
       <Box position={[1.2, 0, 0]} /> */}
@@ -687,7 +710,7 @@ function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string
     onDragStart={()=>setDraggingPivot(true)}
     onDragEnd={()=>setDraggingPivot(false)}
     fixed={true}
-    scale={100}
+    scale={60}
     depthTest={false}
     autoTransform={true}
     anchor={[0, 0, 0]}
@@ -699,7 +722,7 @@ function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string
    onMouseDown={()=>setDraggingPivot(true)}
     onMouseUp={()=>setDraggingPivot(false)}
     mode="scale"> */}
-    <Box index={props.item.index} position={[-1, 0, 0]} />
+    <Box type={props.item.type} index={props.item.index} position={[-1, 0, 0]} />
   {/* // </TransformControls> */}
      </PivotControls>
     )
