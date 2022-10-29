@@ -82,9 +82,9 @@ function Box(props: {position:[number,number,number], index:string, type:'cube'|
 }
 
 
-function SplineLine({points}:{points:THREE.Vector3Tuple[]}){
+function SplineLine({points,objectref}:{points:THREE.Vector3Tuple[],objectref:React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>}){
 
-  const [mesh, setMesh] = useState<THREE.Line|null>(null)
+  const [mesh, setMesh] = useState<{material:THREE.Material,geometry:THREE.TubeGeometry}|null>(null)
 
   useEffect(()=>{
     if(!points||points===undefined||points.length===0||points.length<5){
@@ -92,28 +92,21 @@ function SplineLine({points}:{points:THREE.Vector3Tuple[]}){
     }
     const mappedPoints = points.map(pt => new THREE.Vector3(...pt));
     const beizerPoints = customcalculator(points)
-    // console.log(mappedPoints)
-    const curve = new THREE.CubicBezierCurve3(new THREE.Vector3(...points[0]), new THREE.Vector3(...points[4]), new THREE.Vector3(...points[points.length-5]), new THREE.Vector3(...points[points.length-1]));
-    // const curvePoints = curve.getPoints( 
-    //   // mappedPoints.length
-    //   // >2?Math.round(mappedPoints.length/2):mappedPoints.length
-    //   );
-    const geometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(points.length) );
-    const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
-    const curveObject = new THREE.Line( geometry, material );
-
-    // const curve = new THREE.CatmullRomCurve3(mappedPoints, false, 'chordal', 0);
-    // const curvePoints = curve.getPoints(mappedPoints.length);
-    // const geometry = new THREE.TubeGeometry( curve, undefined, 0.1, 20 );
-
-    // const material = new THREE.MeshToonMaterial( { color: 0x000000, wireframe:false } );
-    // const curveObject = new THREE.Mesh( geometry, material );
-
-    setMesh(curveObject)
+    let filteredPoints = mappedPoints.filter((v,i)=>{
+        return i%2===0
+    })
+    const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'catmullrom');
+    const curvePoints = curve.getPoints(mappedPoints.length);
+    const geometry = new THREE.TubeGeometry( curve, filteredPoints.length, 0.1, 20 );
+    // const geometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(points.length) );
+    const material = new THREE.MeshPhongMaterial({ color: 0xbebebe});
+    // const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+    const curveObject = new THREE.Mesh( geometry, material );
+    setMesh({material:material, geometry:geometry});
   },[points])
 
-
-  return( mesh&&<primitive object={mesh} />)
+// @ts-ignore
+  return( mesh&&<mesh ref={objectref} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={mesh.geometry} material={mesh.material} />)
 }
 
 
@@ -128,24 +121,13 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
   }) {
   const { size } = useThree();
   // This reference will give us direct access to the THREE.Mesh object
-  const ref = useRef<Line2>(null!)
+  const ref = useRef<THREE.Mesh>(null!)
   const pivotRef = useRef<THREE.Group>(null!)
-  // Hold state for hovered and clicked events
-  // useLayoutEffect(() => {
-  //   let temparr = []
-  //   points.forEach((item)=>{//@ts-ignore
-  //     temparr.push(new THREE.Vector3(...item))
-  //   })
-  //   ref.current.geometry.setFromPoints(temparr)
-  // }, [])
   const [hovered, hover] = useState(false)
   const [clicked, click] = useState(false)
   const [LocalTransform, setLocalTransform] = useState<THREE.Matrix4|undefined>()
-  // Rotate mesh every frame, this is outside of React without overhead
-  // useFrame((state, delta) => (ref.current.rotation.x += 0.01))
-  // console.log(points)
   const selected = useSelect();
-  useCursor(hovered, /*'pointer', 'auto'*/)
+  useCursor(hovered)
   useEffect(()=>{
     // console.log(selected[0], selected[0]===ref.current);
     if(selected[0]===ref.current){
@@ -187,7 +169,7 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
     disableSliders={!clicked} 
     disableRotations={!clicked}>
 
-    <Line
+    {/* <Line
     isMesh={true}
         points={points}
         opacity={hovered||clicked?0.6:1}
@@ -197,11 +179,8 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
         onPointerOver={()=>!isDrawing&&hover(true)}
         onPointerOut={()=>hover(false)}
         // raycast={MeshLineRaycast}
-      />
-
-    {/* <SplineLine points={points}/> */}
-
-
+      /> */}
+<     SplineLine objectref={ref} points={points}/>
 
       {/* <mesh
         raycast={MeshLineRaycast}
