@@ -9,24 +9,8 @@ import Slider, {SliderValueLabelProps } from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
 //@ts-ignore
 import { MeshLine, MeshLineMaterial, MeshLineRaycast } from 'meshline'
-import e from 'express';
 import { Object3D } from 'three';
 import { Line2 } from 'three/examples/jsm/lines/Line2';
-import InfoIcon from '@mui/icons-material/Info';
-import CancelIcon from '@mui/icons-material/Cancel';
-import SaveAltIcon from '@mui/icons-material/SaveAlt';
-import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
-import GridOnIcon from '@mui/icons-material/GridOn';
-import GridOffIcon from '@mui/icons-material/GridOff';
-import { IconButton } from '@mui/material';
-import Button from '@mui/material/Button';
-import { GLTFExporter} from 'three/examples/jsm/exporters/GLTFExporter'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faGolfBall } from '@fortawesome/free-solid-svg-icons'
-import { faCube } from '@fortawesome/free-solid-svg-icons'
-import CircleIcon from '@mui/icons-material/Circle';
-import Crop54Icon from '@mui/icons-material/Crop54';
-import InsertLinkIcon from '@mui/icons-material/InsertLink';
 
 // import * as meshline from 'meshline'
 extend({ MeshLine, MeshLineMaterial })
@@ -88,9 +72,9 @@ function Box(props: {position:[number,number,number], index:string, type:'cube'|
 }
 
 
-function SplineLine({points}:{points:THREE.Vector3Tuple[]}){
+function SplineLine({points,objectref, isDrawing}:{points:THREE.Vector3Tuple[],objectref:THREE.Mesh, isDrawing:boolean}){
 
-  const [mesh, setMesh] = useState<THREE.Line|null>(null)
+  const [mesh, setMesh] = useState<{material:THREE.Material,geometry:THREE.TubeGeometry}|null>(null)
 
   useEffect(()=>{
     if(!points||points===undefined||points.length===0||points.length<5){
@@ -99,42 +83,61 @@ function SplineLine({points}:{points:THREE.Vector3Tuple[]}){
     const mappedPoints = points.map(pt => new THREE.Vector3(...pt));
     const beizerPoints = customcalculator(points)
     // console.log(mappedPoints)
-    const curve = new THREE.CubicBezierCurve3(new THREE.Vector3(...points[0]), new THREE.Vector3(...points[4]), new THREE.Vector3(...points[points.length-5]), new THREE.Vector3(...points[points.length-1]));
+    // const curve = new THREE.CubicBezierCurve3(new THREE.Vector3(...points[0]), new THREE.Vector3(...points[4]), new THREE.Vector3(...points[points.length-5]), new THREE.Vector3(...points[points.length-1]));
     // const curvePoints = curve.getPoints( 
     //   // mappedPoints.length
     //   // >2?Math.round(mappedPoints.length/2):mappedPoints.length
     //   );
-    const geometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(points.length) );
-    const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
-    const curveObject = new THREE.Line( geometry, material );
+    
+    // const geometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(points.length) );
+    // const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+    // const curveObject = new THREE.Line( geometry, material );
+    let filteredPoints;
+    if(points.length<1){
+        filteredPoints = mappedPoints
+    }else{
+        filteredPoints = mappedPoints
+        .filter((v,i)=>{
+            return i%3===0
+        });
+    }
+    
+    // filteredPoints.forEach((item,index)=>{
+    //     if(index!==0){
+    //         console.log(item.distanceTo(filteredPoints[index-1]))
 
-    // const curve = new THREE.CatmullRomCurve3(mappedPoints, false, 'chordal', 0);
-    // const curvePoints = curve.getPoints(mappedPoints.length);
-    // const geometry = new THREE.TubeGeometry( curve, undefined, 0.1, 20 );
+    //     }
+    // })
 
-    // const material = new THREE.MeshToonMaterial( { color: 0x000000, wireframe:false } );
-    // const curveObject = new THREE.Mesh( geometry, material );
 
-    setMesh(curveObject)
+    const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
+    const curvePoints = curve.getPoints(mappedPoints.length);
+    let geometry = new THREE.TubeGeometry( curve, 1000, 0.1, 20 );
+    // const geometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(points.length) );
+    const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    // const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+    const curveObject = new THREE.Mesh( geometry, material );
+    setMesh({material:material, geometry:geometry});
   },[points])
 
-
-  return( mesh&&<primitive object={mesh} />)
+// @ts-ignore
+  return( mesh&&<mesh ref={objectref} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={mesh.geometry} material={mesh.material} />)
 }
 
 
-function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTransform}
+function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict}
   :{ 
     points:THREE.Vector3Tuple[],
     isDrawing:boolean, 
     index:string, 
     canvasFunctions:canvasFunctionsProps,
     transform:THREE.Matrix4|undefined,
-    updateTransform(id: string, transform: THREE.Matrix4): void
+    updateTransform(id: string, transform: THREE.Matrix4): void,
+    transformDict:{RelPos:[number,number,number], rotation:THREE.Quaternion}|null
   }) {
   const { size } = useThree();
   // This reference will give us direct access to the THREE.Mesh object
-  const ref = useRef<Line2>(null!)
+  const ref = useRef<THREE.Mesh>(null!)
   const pivotRef = useRef<THREE.Group>(null!)
   // Hold state for hovered and clicked events
   // useLayoutEffect(() => {
@@ -148,6 +151,7 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
   const [clicked, click] = useState(false)
   const [LocalTransform, setLocalTransform] = useState<THREE.Matrix4|undefined>()
   const [initialPosition, setInitialPosition] = useState<THREE.Vector3|null>(null)
+  const [updatedInitialPosition, setUpdatedIntialPosition] = useState<THREE.Vector3|null>(null)
   // Rotate mesh every frame, this is outside of React without overhead
   // useFrame((state, delta) => (ref.current.rotation.x += 0.01))
   // console.log(points)
@@ -180,35 +184,50 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
   }, []);
 
   useEffect(()=>{
-    if(!isDrawing&&!initialPosition){
-      let vec = new THREE.Vector3()
+    if(!isDrawing&&!initialPosition&&ref.current){
+        setTimeout(() => {
+            let vec = new THREE.Vector3()
       let tempPoint = points[Math.floor(points.length/2)];
-      let origin = getCenterPoint(ref.current)
+      let origin = getCenterPoint(ref.current);
+      if(origin===undefined){
+        return
+      }
       console.log(origin.x,origin.y,origin.z);
       // ref.current.position.set(tempPoint[0], tempPoint[1], tempPoint[2])
-      ref.current.position.set(origin.x,origin.y,origin.z)
+      ref.current.position.set(origin.x,origin.y,origin.z);
+      console.log('setting to origin')
       ref.current.geometry.center()
       setInitialPosition(origin);
+        }, 10);
     }
   },[isDrawing])
 
   useEffect(()=>{
-    if(objectTransformMatrix){
+    if(transformDict&&ref.current){
       // ref.current.applyMatrix4(objectTransformMatrix);
-      ref.current.translateX(objectTransformObject?.RelPos[0] as number)
-      ref.current.translateY(objectTransformObject?.RelPos[1] as number)
-      ref.current.translateZ(objectTransformObject?.RelPos[2] as number)
+      let TransformedVector =  new THREE.Vector3();//@ts-ignore
+      TransformedVector=TransformedVector?.addVectors(initialPosition as THREE.Vector3,transformDict.RelPos[4].multiplyScalar(transformDict.RelPos[3]))
+      ref.current.position.set(TransformedVector.x,TransformedVector.y,TransformedVector.z);
+      setUpdatedIntialPosition(TransformedVector)
+    //   setInitialPosition(TransformedVector)
+    //   ref.current.translateX(transformDict?.RelPos[0] as number)
+    //   ref.current.translateY(transformDict?.RelPos[1] as number)
+    //   ref.current.translateZ(transformDict?.RelPos[2] as number)
       //@ts-ignore
-      ref.current.rotateX(objectTransformObject?.rotation.x)
-      //@ts-ignore
-      ref.current.rotateY(objectTransformObject?.rotation.y)
-      //@ts-ignore
-      ref.current.rotateZ(objectTransformObject?.rotation.z)
-      ref.current.updateMatrix()
-      objectTransformMatrix=null
-      objectTransformObject=null
+    //   ref.current.rotateX(transformDict?.rotation.x)
+    //   //@ts-ignore
+    //   ref.current.rotateY(transformDict?.rotation.y)
+    //   //@ts-ignore
+    //   ref.current.rotateZ(transformDict?.rotation.z)
+    //   ref.current.updateMatrix()
+
+    ref.current.setRotationFromQuaternion(transformDict?.rotation)
+    }else{
+        if(updatedInitialPosition&&transformDict===null){
+            setInitialPosition(updatedInitialPosition)
+        }
     }
-  })
+  },[transformDict])
 
   return (
     <PivotControls
@@ -225,7 +244,7 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
     disableSliders={!clicked} 
     disableRotations={!clicked}>
 
-    <Line
+    {/* <Line
     isMesh={true}
         points={points}
         opacity={hovered||clicked?0.6:1}
@@ -235,9 +254,9 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
         onPointerOver={()=>!isDrawing&&hover(true)}
         onPointerOut={()=>hover(false)}
         // raycast={MeshLineRaycast}
-      />
-
-    {/* <SplineLine points={points}/> */}
+      /> */}
+      {/* @ts-ignore */}
+    <SplineLine isDrawing={isDrawing} objectref={ref} points={points}/>
 
 
 
@@ -339,7 +358,7 @@ var mouse = new THREE.Vector2();
 
 
 
-function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLine, loadLines, objectsInScene}:{
+function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLine, loadLines, objectsInScene,transformDict}:{
   mousePos:{x:number,y:number},
   lineNumber:string|null, 
   depth:number,
@@ -354,7 +373,8 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
       [line: string]: THREE.Matrix4|undefined
     }
   }|null,
-  objectsInScene:{index:string, type:'plane'|'cube'|'sphere'}[]
+  objectsInScene:{index:string, type:'plane'|'cube'|'sphere'}[],
+  transformDict:{RelPos:[number,number,number], rotation:THREE.Quaternion}|null
 }){
   const {camera, scene} = useThree();
   const [renderPoints, setRenderPoints]=useState<Array<THREE.Vector3Tuple|undefined>>([]);
@@ -465,7 +485,7 @@ function Sketch({mousePos,lineNumber, depth,isDrawing, canvasFunctions, deleteLi
       <Select multiple border='#000' onChange={(e) => { setSelected(e) }}>
         {Object.keys(points).length !== 0 &&
           Object.keys(points).map((keyIndex, index) => (
-            <TheLine key={index}
+        <TheLine transformDict={transformDict} key={index}
               index={keyIndex}
               canvasFunctions={canvasFunctions}
               isDrawing={isDrawing}
@@ -497,6 +517,7 @@ export default function SketchingCanvas_ObjectLinks() {
   const [depth,setDepth] = useState(0);
   const [Selected,setSelected] = useState<string|null>(null);
   const [deleteLine, setDeleteLine] = useState<string|null>(null);
+  const [transformDict, setTransformDict] = useState<{RelPos:[number,number,number], rotation:THREE.Quaternion}|null>(null);
   const [loadLines, setLoadLines] = useState<{
     points: {
       [line: string]: Array<THREE.Vector3Tuple | undefined>
@@ -516,9 +537,13 @@ export default function SketchingCanvas_ObjectLinks() {
     SelectedObject=null
   };
 
-  useEffect(()=>{
-    // console.log(Selected)
-  },[Selected])
+  function updateDraggingTransformObject(object:{RelPos:[number,number,number], rotation:THREE.Quaternion}|null, nullify=false){
+    if(!nullify){
+        setTransformDict(object)
+    }else{
+        setTransformDict(null)
+    }
+  }
 
   useEffect(()=>{
     setObjectsInScene([{type:'sphere', index:makeid(8)}])
@@ -546,91 +571,7 @@ export default function SketchingCanvas_ObjectLinks() {
           onChange={(e,v)=>setDepth(v as number)}
         />
       </div>
-    <div style={{position:'absolute', right:'10px', top:'10px',display:'block'}}>
-        <IconButton onClick={() => setShowGrid(!showGrid)} style={{ zIndex: 3, opacity: 0.7, display:'none' }}>
-          {showGrid ? <GridOnIcon htmlColor='#000' /> : <GridOffIcon htmlColor='#000' />}
-        </IconButton>
-        <IconButton onClick={() => setDisplayModal(true)} style={{ zIndex: 3, opacity: 0.7, display:'none' }}>
-          <InfoIcon htmlColor='#000' />
-        </IconButton>
-        <IconButton onClick={() => linked=!linked} style={{ zIndex: 3, opacity: 0.7 }}>
-          <InsertLinkIcon/>
-        </IconButton>
-      </div>
-    <div className='InfoModal' style={{display:displayModal?'block':'none'}}>
-        <div style={{ position: 'absolute',right:0 }}>
-          <IconButton onClick={() => setDisplayModal(false)} style={{ zIndex: 3, opacity: 0.7 }}>
-            <CancelIcon htmlColor='#000' />
-          </IconButton>
-        </div>
-        <div style={{display:'flex', flexDirection:'column', width:'100%', height:'100%', justifyContent:'center', alignItems:'center'}}>
-          <div style={{display:'flex', paddingTop:'20px',flexDirection:'column', justifyContent:'space-around',width:'100%', height:'100%', alignItems:'center', overflow:'scroll'}}>
-          <div style={{ display: 'flex', padding: '10px', width:'50vh', alignItems:'center' }}>
-            <img style={{ width: '40px', height: '40px' }} src={require("./assets/leftMouse.png")} />
-            <p style={{margin:0, marginLeft:'10px'}}>Click and drag to start sketching anywhere. Your drawings will be added to this scene. Additionally, you can click on any line and change it's position or rotation. While a line is selected, press the delete key to remove it.</p>
-          </div>
-          <div style={{ display: 'flex', padding: '10px', width:'50vh', alignItems:'center' }}>
-            <img style={{ width: '40px', height: '40px' }} src={require("./assets/rightMouse.png")} />
-            <p style={{margin:0, marginLeft:'10px'}}>Right click and drag to rotate the view. You can pan around the scene by dragging while holding the shift key.</p>
-          </div>
-          <div style={{ display: 'flex', padding: '10px', width:'50vh', alignItems:'center' }}>
-            <img style={{ width: '40px', height: '40px' }} src={require("./assets/scrollMouse.png")} />
-            <p style={{margin:0, marginLeft:'10px'}}>Scroll to zoom in or out.</p>
-          </div>
-          <div style={{ display: 'flex', padding: '10px', width:'50vh', alignItems:'center' }}>
-            <img style={{ width: '40px', height: '40px' }} src={require("./assets/slider.png")} />
-            <p style={{margin:0, marginLeft:'10px'}}>Use the slider to draw at a specific depth. Default is 0, move it up or down to draw at multiple depths from the same perspective.</p>
-          </div>
-          </div>
-          <div style={{ display: 'flex', padding: '10px',paddingTop:'0' ,width:'50vh', alignItems:'center', justifyContent:'space-evenly' }}>
-            {/* <Button 
-              onClick={() => {
-                if(DrawingScene===null){
-                  return
-                }
-                // downloadObjectAsJson(DrawingScene.toJSON(),'scene')
-                // DrawingScene.children[0].children.forEach((item)=>{
-                //   let obj = item.children[0].children[1].children[0] as Line2;
-                //   let LineGeometry = obj.geometry.clone();
-                //   LineGeometry.applyMatrix4(obj.matrix);
-                //   console.log(Array.from(LineGeometry.attributes.position.array))
-                // })
-              }}
-            startIcon={<ThreeDRotationIcon/>} size={'small'} variant="contained">Export as OBJ</Button> */}
-            <Button onClick={() => {if(DrawingObject)
-                downloadObjectAsJson(DrawingObject, '3D Sketch')
-              }}startIcon={<SaveAltIcon />} size={'small'} variant="contained">Save Drawing</Button>
-              <Button onClick={() => {
-              let theinput = document.createElement('input');
-              theinput.type = 'file';
-              theinput.onchange = (e) => {
-                const fileReader = new FileReader();//@ts-ignore
-                fileReader.readAsText(e.target?.files[0], "UTF-8");
-                fileReader.onload = e => {//@ts-ignore
-                  // console.log(JSON.parse(e.target?.result));
-                  //@ts-ignore
-                  setLoadLines(JSON.parse(e.target?.result));
-                  setTimeout(() => {
-                    setLoadLines(null);
-                  }, 100);
-                };
-              };
-              theinput.click();
-              }}startIcon={<ThreeDRotationIcon />} size={'small'} variant="contained">Load Drawing</Button>
-          </div>
-
-
-          <p style={{bottom: 0, width: "100%", textAlign: "center", marginTop: "4px"}}>Made by 
-          <a style={{color:'black', textDecorationColor:'#03dac6'}} href="https://adigunturu.com"> Aditya Gunturu</a> (and lots of ☕) using <a style={{color:'black', textDecorationColor:'#03dac6'}} href="https://threejs.org">Three.js</a>
-          </p>
-
-        </div>
-    </div>
-    <div style={{position:'absolute', top:'10px', left:'10px', display:'none', zIndex:5}}>
-      <IconButton onClick={()=>setObjectsInScene((prev)=>[...prev, {type:'cube', index:makeid(8)}])}><FontAwesomeIcon icon={faCube} /></IconButton>
-      <IconButton onClick={()=>setObjectsInScene((prev)=>[...prev, {type:'plane', index:makeid(8)}])}><Crop54Icon fontSize='large' /></IconButton>
-      <IconButton onClick={()=>setObjectsInScene((prev)=>[...prev, {type:'sphere', index:makeid(8)}])}><CircleIcon fontSize='large'/></IconButton>
-    </div>
+    
     <Canvas 
     onPointerMissed={()=>{SelectedObject=null; selectedObjectIndex=null}}
     tabIndex={0}
@@ -704,7 +645,7 @@ export default function SketchingCanvas_ObjectLinks() {
     }}
     // onClick={(e)=>{objectClicked=false}}
     >
-      <Sketch objectsInScene={objectsInScene} loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
+      <Sketch transformDict={transformDict} objectsInScene={objectsInScene} loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
       {/* <ThreeDObjects canvasFunctions={canvasFunctions} isDrawing={isDrawing}  objectsInScene={objectsInScene}/> */}
       <OrthographicCamera makeDefault zoom={80} position={[10, 4, 4]} />
          {/* <perspectiveCamera position={[10, 4, 4]}*/}
@@ -726,7 +667,7 @@ export default function SketchingCanvas_ObjectLinks() {
       {/* <Box position={[-1.2, 0, 0]} />
       <Box position={[1.2, 0, 0]} /> */}
       {objectsInScene.map((item)=>(
-        <BaseObject key={item.index} item={item} isDrawing={isDrawing} index={item.index}/>
+        <BaseObject updateDraggingTransformObject={updateDraggingTransformObject} key={item.index} item={item} isDrawing={isDrawing} index={item.index}/>
         ))}
       <gridHelper visible={showGrid} />
     </Canvas>
@@ -734,7 +675,7 @@ export default function SketchingCanvas_ObjectLinks() {
   )
 }
 
-function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string}, isDrawing:boolean, index:string}){
+function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string}, isDrawing:boolean, index:string, updateDraggingTransformObject:(object:any, nullify?:boolean)=>void}){
   const transformref = useRef()
   const objectRef = useRef<THREE.Mesh>(null!)
   const [isDraggingPivot, setDraggingPivot] = useState(false);
@@ -763,7 +704,9 @@ function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string
       setDraggingPivot(false);
       let randomVectwo = new THREE.Vector3();
       objectRef.current.getWorldPosition(randomVectwo);
-      setInitialPosition(randomVectwo)
+    //   console.log(randomVectwo)
+      setInitialPosition(randomVectwo);
+      props.updateDraggingTransformObject(null, true)
     }}
     onDrag={(l,dl,w,dw)=>{
       var vec = new THREE.Vector3();//@ts-ignore
@@ -780,12 +723,20 @@ function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string
       objectRef.current.getWorldPosition(tempVec)
       // console.log(objectRef.current.getWorldPosition(tempVec))
       let distance = tempVec.distanceTo(initialPosition as THREE.Vector3)
-      console.log(distance)
-      let TransformedVector = tempVec.normalize().multiplyScalar(distance)
-      console.log(TransformedVector)
+      objectRef.current.getWorldQuaternion(rotation);
+      console.log(rotation)
+      let TransformedVector =  new THREE.Vector3();
+      TransformedVector=TransformedVector?.addVectors(initialPosition as THREE.Vector3,tempVec.subVectors(tempVec,initialPosition as THREE.Vector3).normalize().multiplyScalar(distance))
+    //   console.log(TransformedVector)
       // console.log(objectRef.current.getWorldQuaternion(tempQuat))
       // console.log(tempVec, tempQuat)
-      objectTransformObject = {RelPos: [TransformedVector.x,TransformedVector.y, TransformedVector.z], rotation:rotation};
+      if(rotation.x!==0||rotation.y!==0||rotation.z!==0){
+        TransformedVector.x = 0;
+        TransformedVector.y = 0;
+        TransformedVector.z = 0;
+      }//@ts-ignore
+      objectTransformObject = {RelPos: [TransformedVector.x,TransformedVector.y, TransformedVector.z, distance, tempVec.subVectors(tempVec,initialPosition as THREE.Vector3).normalize()], rotation:rotation};
+      props.updateDraggingTransformObject(objectTransformObject)
     }}
     fixed={true}
     scale={60}
@@ -874,6 +825,9 @@ function customcalculator(points: THREE.Vector3Tuple[]) {
 }
 
 function getCenterPoint(mesh:THREE.Mesh) {
+  if(mesh===null){
+    return
+  }
   var geometry = mesh.geometry;
   geometry.computeBoundingBox();
   var center = new THREE.Vector3();
