@@ -7,7 +7,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, PerspectiveCamera, PivotControls, Plane, RoundedBox, Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
 import { Object3D } from 'three';
 import { Line2 } from 'three/examples/jsm/lines/Line2';
-
+import Slider, { SliderValueLabelProps } from '@mui/material/Slider';
+import Tooltip from '@mui/material/Tooltip';
 
 let DrawingObject: {
     points: {
@@ -394,7 +395,7 @@ export default function SketchingCanvas_ObjectLinks() {
     }
     return (
         <>
-            <div style={{ height: '60%', position: 'absolute', zIndex: 2, padding: '10px', marginTop: 'calc((100vh - (60vh + 20px))/2)', display: 'none' }}>
+            <div style={{ height: '60%', position: 'absolute', zIndex: 2, padding: '10px', marginTop: 'calc((100vh - (60vh + 20px))/2)'}}>
                 <Slider
                     defaultValue={0}
                     step={1}
