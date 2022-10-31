@@ -7,13 +7,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, PerspectiveCamera, PivotControls, Plane, RoundedBox, Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
 import Slider, { SliderValueLabelProps } from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
-//@ts-ignore
-import { MeshLine, MeshLineMaterial, MeshLineRaycast } from 'meshline'
 import { Object3D } from 'three';
 import { Line2 } from 'three/examples/jsm/lines/Line2';
-
-extend({ MeshLine, MeshLineMaterial })
-// extend(meshline)
 
 
 let DrawingObject: {
@@ -32,9 +27,9 @@ type canvasFunctionsProps = {
     updateSelected: (index: string | null) => void;
 }
 
-let latestStrokeId: null | string = null;
+let latestStrokeId: null | string = makeid(8);
 let objectTransformMatrix: THREE.Matrix4 | null = null
-let objectTransformObject: { RelPos: [number, number, number], rotation: THREE.Quaternion, scale?: number } | null = null
+let objectTransformObject: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null = null
 let currentkeyPressed: string | null = null;
 
 let objectClicked = false;
@@ -88,7 +83,7 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
         canvasFunctions: canvasFunctionsProps,
         transform: THREE.Matrix4 | undefined,
         updateTransform(id: string, transform: THREE.Matrix4): void,
-        transformDict: { RelPos: [number, number, number], rotation: THREE.Quaternion, scale?: number } | null
+        transformDict: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null
     }) {
     const ref = useRef<THREE.Mesh | THREE.Line>(null!)
     const pivotRef = useRef<THREE.Group>(null!)
@@ -127,7 +122,7 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
         if (!isDrawing && !initialPosition && ref.current) {
             setTimeout(() => {
                 let origin = getCenterPoint(ref.current as THREE.Mesh);
-                if (origin === undefined) {
+                if (!origin || origin === undefined) {
                     return
                 }
                 ref.current.position.set(origin.x, origin.y, origin.z);
@@ -138,6 +133,9 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
     }, [isDrawing])
 
     useEffect(() => {
+        if(index!==latestStrokeId){
+            return
+        }
         if (transformDict && ref.current) {
             if (currentkeyPressed === 'AltLeft' && transformDict.scale !== undefined) {
                 // console.log(transformDict.scale);
@@ -146,8 +144,11 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
                 return
             }
             // ref.current.applyMatrix4(objectTransformMatrix);
-            let TransformedVector = new THREE.Vector3();//@ts-ignore
-            TransformedVector = TransformedVector?.addVectors(initialPosition as THREE.Vector3, transformDict.RelPos[4].multiplyScalar(transformDict.RelPos[3]))
+            let TransformedVector = new THREE.Vector3();
+            if(initialPosition===null||transformDict.RelPos[4]===undefined){
+                return
+            }
+            TransformedVector = TransformedVector?.addVectors(initialPosition, transformDict.RelPos[4].multiplyScalar(transformDict.RelPos[3]))
             ref.current.position.set(TransformedVector.x, TransformedVector.y, TransformedVector.z);
             setUpdatedIntialPosition(TransformedVector)
             ref.current.setRotationFromQuaternion(transformDict?.rotation)
@@ -245,7 +246,7 @@ function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, delet
         }
     } | null,
     objectsInScene: { index: string, type: 'plane' | 'cube' | 'sphere' }[],
-    transformDict: { RelPos: [number, number, number], rotation: THREE.Quaternion } | null
+    transformDict: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion } | null
 }) {
     const { camera, scene } = useThree();
     const [renderPoints, setRenderPoints] = useState<Array<THREE.Vector3Tuple | undefined>>([]);
@@ -358,12 +359,12 @@ export default function SketchingCanvas_ObjectLinks() {
     const [mousePos, setMousePoint] = useState({ x: 0, y: 0 });
     const [objectsInScene, setObjectsInScene] = useState<{ type: 'sphere' | 'cube' | 'plane', index: string }[]>([]);
     const [isMouseDown, setMouseDown] = useState(false);
-    const [lineNumber, setLine] = useState<string | null>(makeid(8));
+    const [lineNumber, setLine] = useState<string | null>(latestStrokeId);
     const [isDrawing, setIsDrawing] = useState(false);
     const [depth, setDepth] = useState(0);
     const [Selected, setSelected] = useState<string | null>(null);
     const [deleteLine, setDeleteLine] = useState<string | null>(null);
-    const [transformDict, setTransformDict] = useState<{ RelPos: [number, number, number], rotation: THREE.Quaternion } | null>(null);
+    const [transformDict, setTransformDict] = useState<{ RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion } | null>(null);
     const [loadLines, setLoadLines] = useState<{
         points: {
             [line: string]: Array<THREE.Vector3Tuple | undefined>
@@ -379,7 +380,7 @@ export default function SketchingCanvas_ObjectLinks() {
         SelectedObject = null
     };
 
-    function updateDraggingTransformObject(object: { RelPos: [number, number, number], rotation: THREE.Quaternion, scale?: number } | null, nullify = false) {
+    function updateDraggingTransformObject(object: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null, nullify = false) {
         if (!nullify) {
             setTransformDict(object)
         } else {
@@ -461,7 +462,6 @@ export default function SketchingCanvas_ObjectLinks() {
                     if (isDrawing) {
                         const NewLineID = makeid(8)
                         setLine(NewLineID);
-                        latestStrokeId = NewLineID;
                     }
                     setIsDrawing(false)
                 }}
@@ -535,7 +535,7 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
                     let vec = new THREE.Vector3()
                     let scale = new THREE.Vector3()
                     l.decompose(vec, quartn, scale);
-                    objectTransformObject = { RelPos: [0, 0, 0], rotation: quartn, scale: 0 - (initialPosition?.z - vec.z) };
+                    objectTransformObject = { RelPos: [0, 0, 0, 0, new THREE.Vector3()], rotation: quartn, scale: 0 - (initialPosition?.z - vec.z) };
                     props.updateDraggingTransformObject(objectTransformObject)
                     return
                 }
