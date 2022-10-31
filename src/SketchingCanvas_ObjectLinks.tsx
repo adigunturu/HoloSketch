@@ -9,7 +9,7 @@ import Slider, {SliderValueLabelProps } from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
 //@ts-ignore
 import { MeshLine, MeshLineMaterial, MeshLineRaycast } from 'meshline'
-import { Object3D } from 'three';
+import { Object3D, Vector3 } from 'three';
 import { Line2 } from 'three/examples/jsm/lines/Line2';
 
 // import * as meshline from 'meshline'
@@ -36,7 +36,9 @@ type canvasFunctionsProps={
 let linked = false;
 let latestStrokeId:null|string = null;
 let objectTransformMatrix:THREE.Matrix4|null = null
-let objectTransformObject:{RelPos:[number,number,number], rotation:THREE.Quaternion}|null = null
+let objectTransformObject:{RelPos:[number,number,number], rotation:THREE.Quaternion, scale?:number}|null = null
+let scaleOnMove = true;
+let currentkeyPressed:string|null =null;
 
 let objectClicked = false;
 function Box(props: {position:[number,number,number], index:string, type:'cube'|'sphere'|'plane', objectRef:React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>}) {
@@ -112,7 +114,7 @@ function SplineLine({points,objectref, isDrawing}:{points:THREE.Vector3Tuple[],o
 
     const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
     const curvePoints = curve.getPoints(mappedPoints.length);
-    let geometry = new THREE.TubeGeometry( curve, 1000, 0.1, 20 );
+    let geometry = new THREE.TubeGeometry( curve, 1000, 0.08, 20 );
     // const geometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(points.length) );
     const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
     // const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
@@ -133,7 +135,7 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
     canvasFunctions:canvasFunctionsProps,
     transform:THREE.Matrix4|undefined,
     updateTransform(id: string, transform: THREE.Matrix4): void,
-    transformDict:{RelPos:[number,number,number], rotation:THREE.Quaternion}|null
+    transformDict:{RelPos:[number,number,number], rotation:THREE.Quaternion, scale?:number}|null
   }) {
   const { size } = useThree();
   // This reference will give us direct access to the THREE.Mesh object
@@ -151,6 +153,7 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
   const [clicked, click] = useState(false)
   const [LocalTransform, setLocalTransform] = useState<THREE.Matrix4|undefined>()
   const [initialPosition, setInitialPosition] = useState<THREE.Vector3|null>(null)
+  const [initialScale, setinitialScale] = useState<THREE.Vector3>(new THREE.Vector3(1,1,1))
   const [updatedInitialPosition, setUpdatedIntialPosition] = useState<THREE.Vector3|null>(null)
   // Rotate mesh every frame, this is outside of React without overhead
   // useFrame((state, delta) => (ref.current.rotation.x += 0.01))
@@ -192,10 +195,10 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
       if(origin===undefined){
         return
       }
-      console.log(origin.x,origin.y,origin.z);
+    //   console.log(origin.x,origin.y,origin.z);
       // ref.current.position.set(tempPoint[0], tempPoint[1], tempPoint[2])
       ref.current.position.set(origin.x,origin.y,origin.z);
-      console.log('setting to origin')
+    //   console.log('setting to origin')
       ref.current.geometry.center()
       setInitialPosition(origin);
         }, 10);
@@ -204,6 +207,12 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
 
   useEffect(()=>{
     if(transformDict&&ref.current){
+        if(currentkeyPressed==='AltLeft'&&transformDict.scale!==undefined){
+            // console.log(transformDict.scale);
+            let newScale = initialScale.z+transformDict.scale
+            ref.current.scale.set(newScale,newScale,newScale)
+            return
+        }
       // ref.current.applyMatrix4(objectTransformMatrix);
       let TransformedVector =  new THREE.Vector3();//@ts-ignore
       TransformedVector=TransformedVector?.addVectors(initialPosition as THREE.Vector3,transformDict.RelPos[4].multiplyScalar(transformDict.RelPos[3]))
@@ -223,8 +232,15 @@ function TheLine({points, isDrawing, index, canvasFunctions, transform, updateTr
 
     ref.current.setRotationFromQuaternion(transformDict?.rotation)
     }else{
-        if(updatedInitialPosition&&transformDict===null){
-            setInitialPosition(updatedInitialPosition)
+        if (updatedInitialPosition && transformDict === null) {
+            setInitialPosition(updatedInitialPosition);
+        }
+
+        if(ref.current){
+            let tempScale = new THREE.Vector3()
+            ref.current.getWorldScale(tempScale)
+            setinitialScale(tempScale);
+            console.log(tempScale.z)
         }
     }
   },[transformDict])
@@ -537,7 +553,7 @@ export default function SketchingCanvas_ObjectLinks() {
     SelectedObject=null
   };
 
-  function updateDraggingTransformObject(object:{RelPos:[number,number,number], rotation:THREE.Quaternion}|null, nullify=false){
+  function updateDraggingTransformObject(object:{RelPos:[number,number,number], rotation:THREE.Quaternion, scale?:number}|null, nullify=false){
     if(!nullify){
         setTransformDict(object)
     }else{
@@ -554,7 +570,7 @@ export default function SketchingCanvas_ObjectLinks() {
   }
   return (
     <>
-      <div style={{height:'60%', position:'absolute', zIndex:2, padding:'10px', marginTop:'calc((100vh - (60vh + 20px))/2)'}}>
+      <div style={{height:'60%', position:'absolute', zIndex:2, padding:'10px', marginTop:'calc((100vh - (60vh + 20px))/2)', display:'none'}}>
         <Slider
           defaultValue={0}
           step={1}
@@ -575,7 +591,11 @@ export default function SketchingCanvas_ObjectLinks() {
     <Canvas 
     onPointerMissed={()=>{SelectedObject=null; selectedObjectIndex=null}}
     tabIndex={0}
+    onKeyUp={()=>{
+        currentkeyPressed = null
+    }}
     onKeyDown={(e)=>{
+        currentkeyPressed = e.code;
       // console.log(e.code,Selected)
       if(e.code==="Delete" && Selected!==null){
         console.log('deleting', Selected)
@@ -679,7 +699,7 @@ function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string
   const transformref = useRef()
   const objectRef = useRef<THREE.Mesh>(null!)
   const [isDraggingPivot, setDraggingPivot] = useState(false);
-  const [initialPosition, setInitialPosition] = useState<THREE.Vector3>();
+  const [initialPosition, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
   useEffect(()=>{
     if(isDraggingPivot){
       objectClicked=true;
@@ -709,6 +729,18 @@ function BaseObject(props:{item:{type: 'sphere' | 'cube' | 'plane';index: string
       props.updateDraggingTransformObject(null, true)
     }}
     onDrag={(l,dl,w,dw)=>{
+        // console.log(currentkeyPressed)
+        if(currentkeyPressed === 'AltLeft'){
+           let quartn = new THREE.Quaternion()
+           let vec = new THREE.Vector3()
+           let scale = new THREE.Vector3()
+           l.decompose(vec, quartn, scale);
+           objectTransformObject = {RelPos: [0,0, 0], rotation:quartn, scale:0-(initialPosition?.z-vec.z)};
+           props.updateDraggingTransformObject(objectTransformObject)
+            return
+        }
+
+
       var vec = new THREE.Vector3();//@ts-ignore
       //vec.setFromMatrixPosition(transformref.current?.matrix);
       var rotation = new THREE.Quaternion();
