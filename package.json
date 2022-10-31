@@ -1,0 +1,43 @@
+{
+    "name": "3D Desktop Sketching",
+    "version": "1.0.0",
+    "description": "3D sketching in Three JS",
+    "keywords": [
+        "typescript",
+        "react",
+        "starter"
+    ],
+    "main": "src/index.tsx",
+    "author": "adigunturu",
+    "dependencies": {
+        "@emotion/react": "^11.10.4",
+        "@emotion/styled": "^11.10.4",
+        "@mui/icons-material": "^5.10.9",
+        "@mui/material": "^5.10.10",
+        "@react-three/drei": "^9.36.0",
+        "@react-three/fiber": "8.2.2",
+        "@types/react": "18.0.15",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "react-scripts": "5.0.1",
+        "three": "0.143.0",
+        "typescript": "4.7.4"
+    },
+    "devDependencies": {
+        "@types/react": "17.0.0",
+        "@types/react-dom": "17.0.0",
+        "@types/three": "^0.144.0",
+        "typescript": "4.1.3"
+    },
+    "scripts": {
+        "start": "node server.js",
+        "sketch": "react-scripts start",
+        "build": "react-scripts build"
+    },
+    "browserslist": [
+        ">0.2%",
+        "not dead",
+        "not ie <= 11",
+        "not op_mini all"
+    ]
+}
