@@ -71,9 +71,7 @@ function TubeLine({ points, objectref }: { points: THREE.Vector3Tuple[], objectr
         }
         const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
         let geometry = new THREE.TubeGeometry(curve, 1000, 0.08, 20);
-        // const geometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(points.length) );
         const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-        // const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
         setMesh({ material: material, geometry: geometry });
     }, [points])
 
