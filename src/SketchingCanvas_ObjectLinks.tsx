@@ -51,7 +51,7 @@ function SolidObject(props: { position: [number, number, number], index: string,
 }
 
 
-function SplineLine({ points, objectref }: { points: THREE.Vector3Tuple[], objectref: React.MutableRefObject<THREE.Mesh> }) {
+function TubeLine({ points, objectref }: { points: THREE.Vector3Tuple[], objectref: React.MutableRefObject<THREE.Mesh> }) {
 
     const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null)
 
@@ -193,7 +193,7 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
                 onPointerOut={() => hover(false)}
             /> */}
 
-            <SplineLine objectref={ref as React.MutableRefObject<THREE.Mesh>} points={points} />
+            <TubeLine objectref={ref as React.MutableRefObject<THREE.Mesh>} points={points} />
 
 
         </PivotControls>
