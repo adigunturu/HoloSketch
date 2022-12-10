@@ -10,6 +10,10 @@ import { Line2 } from 'three/examples/jsm/lines/Line2';
 import Slider, { SliderValueLabelProps } from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
 
+//importing physics libraries
+import { Debug, useBox, usePlane } from '@react-three/cannon'
+import { Physics, useSphere, useTrimesh } from '@react-three/cannon'
+
 let DrawingObject: {
     points: {
         [line: string]: Array<THREE.Vector3Tuple | undefined>
@@ -45,9 +49,33 @@ function SolidObject(props: { position: [number, number, number], index: string,
 }
 
 
-function TubeLine({ points, objectref }: { points: THREE.Vector3Tuple[], objectref: React.MutableRefObject<THREE.Mesh> }) {
+function TubeLine({ points, objectref, isDrawing }: { 
+    points: THREE.Vector3Tuple[], 
+    objectref: React.MutableRefObject<THREE.Mesh>,
+    isDrawing:boolean }) {
 
     const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null)
+
+
+    // let newgeo = generateGeometry(points)
+    // let newref = null;
+    // if(newgeo[0]===null||newgeo[1]===null){
+    //     newgeo = [[0,0,0],[0,0,0]]
+    // }
+    // newref = useTrimesh(
+    //     () => ({//@ts-ignore
+    //         args: [newgeo[0], newgeo[1]],
+    //         mass: 1,
+    //     }),
+    //     useRef<THREE.Mesh>(null),
+    // )
+    // console.log(isDrawing,newref);
+
+    useEffect(()=>{
+        if(!isDrawing){
+            console.log(objectref.current.geometry)
+        }
+    },[isDrawing])
 
     useEffect(() => {
         if (!points || points === undefined || points.length === 0 || points.length < 5) {
@@ -70,7 +98,7 @@ function TubeLine({ points, objectref }: { points: THREE.Vector3Tuple[], objectr
     }, [points])
 
     // @ts-ignore
-    return (mesh && <mesh ref={objectref} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={mesh.geometry} material={mesh.material} />)
+    return (mesh && objectref&&objectref.current&&<mesh ref={objectref} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={mesh.geometry} material={mesh.material} />)
 }
 
 
@@ -84,7 +112,22 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
         updateTransform(id: string, transform: THREE.Matrix4): void,
         transformDict: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null
     }) {
-    const ref = useRef<THREE.Mesh | THREE.Line>(null!)
+
+    let oldref = useRef<THREE.Mesh>(null!)
+    let newgeo = generateGeometry(points)
+    let newref = null;
+    if(newgeo[0]===null||newgeo[1]===null){
+        newgeo = [[0,0,0],[0,0,0]]
+    }
+    newref = useTrimesh(
+        () => ({//@ts-ignore
+            args: [newgeo[0], newgeo[1]],
+            mass: 1,
+        }),
+        useRef<THREE.Mesh>(null),
+    )
+    const ref = newref[0]
+
     const pivotRef = useRef<THREE.Group>(null!)
     const [hovered, hover] = useState(false)
     const [clicked, click] = useState(false)
@@ -113,7 +156,7 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
 
     useEffect(() => {
         if (transform !== undefined) {
-            ref.current.applyMatrix4(transform)
+            ref.current?.applyMatrix4(transform)
         }
     }, []);
 
@@ -124,8 +167,8 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
                 if (!origin || origin === undefined) {
                     return
                 }
-                ref.current.position.set(origin.x, origin.y, origin.z);
-                ref.current.geometry.center()
+                ref.current?.position.set(origin.x, origin.y, origin.z);
+                ref.current?.geometry.center()
                 setInitialPosition(origin);
             }, 10);
         }
@@ -190,7 +233,7 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
                 onPointerOut={() => hover(false)}
             /> */}
 
-            <TubeLine objectref={ref as React.MutableRefObject<THREE.Mesh>} points={points} />
+            <TubeLine objectref={ref as React.MutableRefObject<THREE.Mesh>} points={points} isDrawing={isDrawing} />
 
 
         </PivotControls>
@@ -333,6 +376,13 @@ function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, delet
         setTransforms((prev) => ({ ...prev, [id]: transform }))
     }
 
+
+    useEffect(()=>{
+        if(!isDrawing){
+            console.log(Object.keys(points))
+        }
+    },[isDrawing])
+
     return (
         <>
             <Select multiple border='#000' onChange={(e) => { setSelected(e) }}>
@@ -350,6 +400,19 @@ function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, delet
                 }
             </Select>
         </>
+    )
+}
+
+
+
+//Origin Plane Function
+function OriginPlane(props:any) {
+    const [ref] = usePlane(() => ({ rotation: [-Math.PI / 2, 0, 0], ...props }))
+    return (
+      <mesh ref={ref as React.Ref<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>}>
+        <planeGeometry args={[10, 10]} />
+        <meshBasicMaterial color="#171717" transparent opacity={0.2}/>
+      </mesh>
     )
 }
 
@@ -387,7 +450,7 @@ export default function SketchingCanvas_ObjectLinks() {
     }
 
     useEffect(() => {
-        setObjectsInScene([{ type: 'sphere', index: makeid(8) }])
+        setObjectsInScene([{ type: 'cube', index: makeid(8) }])
     }, [])
 
     let canvasFunctions: canvasFunctionsProps = {
@@ -473,21 +536,26 @@ export default function SketchingCanvas_ObjectLinks() {
                     }
                 }}
             >
-                <Sketch transformDict={transformDict} objectsInScene={objectsInScene} loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
-                <OrthographicCamera makeDefault zoom={80} position={[10, 4, 4]} />
-                <Controller />
-                <GizmoHelper
-                    alignment="bottom-right" // widget alignment within scene
-                    margin={[80, 80]} // widget margins (X, Y)
-                >
-                    <GizmoViewport />
-                </GizmoHelper>
-                <ambientLight intensity={0.5} />
-                <spotLight position={[20, 4, 10]} angle={0.60} penumbra={1} />
-                {objectsInScene.map((item) => (
-                    <BaseObject updateDraggingTransformObject={updateDraggingTransformObject} key={item.index} item={item} isDrawing={isDrawing} index={item.index} />
-                ))}
-                <gridHelper visible={true} />
+                <Physics>
+                <Debug color="black" scale={1.1}>
+                    <Sketch transformDict={transformDict} objectsInScene={objectsInScene} loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
+                    {objectsInScene.map((item) => (
+                        <BaseObject updateDraggingTransformObject={updateDraggingTransformObject} key={item.index} item={item} isDrawing={isDrawing} index={item.index} />
+                    ))}
+                    <OriginPlane position={[0, 0, 0]}/>
+                </Debug>
+                </Physics>
+                    <OrthographicCamera makeDefault zoom={80} position={[10, 4, 4]} />
+                    <Controller />
+                    <GizmoHelper
+                        alignment="bottom-right" // widget alignment within scene
+                        margin={[80, 80]} // widget margins (X, Y)
+                    >
+                        <GizmoViewport />
+                    </GizmoHelper>
+                    <ambientLight intensity={0.5} />
+                    <spotLight position={[20, 4, 10]} angle={0.60} penumbra={1} />
+                    <gridHelper visible={true} />
             </Canvas>
         </>
     )
@@ -495,7 +563,13 @@ export default function SketchingCanvas_ObjectLinks() {
 
 function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: string }, isDrawing: boolean, index: string, updateDraggingTransformObject: (object: any, nullify?: boolean) => void }) {
     const transformref = useRef()
-    const objectRef = useRef<THREE.Mesh>(null!)
+    // const objectRef = useRef<THREE.Mesh>(null!)
+    let [objectRef] = props.item.type==='sphere'?useSphere(() => ({ mass: 1, position:[0, 3, 0],args:[0.8]})):props.item.type==='cube'?useBox(() => ({ mass: 1, position: [0, 3, 0],args:[1,1,1]})):useBox(() => ({ mass: 1, position: [0, 8, 0],args:[2,2,0]}))
+    useEffect(()=>{//@ts-ignore
+        let vertices = objectRef.current?.geometry.attributes.position.array//@ts-ignore
+        let indices = objectRef.current?.geometry.index?.array;
+        console.log(vertices, indices)
+    },[])
     const [isDraggingPivot, setDraggingPivot] = useState(false);
     const [initialPosition, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
     useEffect(() => {
@@ -508,7 +582,7 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
 
     useEffect(() => {
         let randomVec = new THREE.Vector3();
-        objectRef.current.getWorldPosition(randomVec);
+        objectRef.current?.getWorldPosition(randomVec);
         setInitialPosition(randomVec)
         console.log(randomVec)
     }, [])
@@ -521,7 +595,7 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
             onDragEnd={() => {
                 setDraggingPivot(false);
                 let randomVectwo = new THREE.Vector3();
-                objectRef.current.getWorldPosition(randomVectwo);
+                objectRef.current?.getWorldPosition(randomVectwo);
                 //   console.log(randomVectwo)
                 setInitialPosition(randomVectwo);
                 props.updateDraggingTransformObject(null, true)
@@ -547,10 +621,10 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
                 var tempVec = new THREE.Vector3();
                 var tempQuat = new THREE.Quaternion();
                 var temp = new THREE.Vector3();
-                objectRef.current.getWorldPosition(tempVec)
+                objectRef.current?.getWorldPosition(tempVec)
                 // console.log(objectRef.current.getWorldPosition(tempVec))
                 let distance = tempVec.distanceTo(initialPosition as THREE.Vector3)
-                objectRef.current.getWorldQuaternion(rotation);
+                objectRef.current?.getWorldQuaternion(rotation);
                 console.log(rotation)
                 let TransformedVector = new THREE.Vector3();
                 TransformedVector = TransformedVector?.addVectors(initialPosition as THREE.Vector3, tempVec.subVectors(tempVec, initialPosition as THREE.Vector3).normalize().multiplyScalar(distance));
@@ -572,7 +646,7 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
             disableAxes={selectedObjectIndex === props.item.index && props.isDrawing && !isDraggingPivot}
             disableSliders={selectedObjectIndex === props.item.index && props.isDrawing && !isDraggingPivot}
             disableRotations={selectedObjectIndex === props.item.index && props.isDrawing && !isDraggingPivot}>
-            <SolidObject objectRef={objectRef} type={props.item.type} index={props.item.index} position={[0, 0, 0]} />
+            <SolidObject objectRef={objectRef as React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>} type={props.item.type} index={props.item.index} position={[0, 3, 0]} />
         </PivotControls>
     )
 }
@@ -598,7 +672,8 @@ function makeid(length: number) {
 }
 
 function getCenterPoint(mesh: THREE.Mesh) {
-    if (mesh === null) {
+    if (mesh === null||mesh===undefined||mesh.geometry===undefined) {
+        console.log('center return')
         return
     }
     var geometry = mesh.geometry;
@@ -606,4 +681,30 @@ function getCenterPoint(mesh: THREE.Mesh) {
     var center = new THREE.Vector3();
     geometry.boundingBox?.getCenter(center);
     return center;
+}
+
+
+function generateGeometry(points:THREE.Vector3Tuple[]){
+    if (!points || points === undefined || points.length === 0 || points.length < 5) {
+        return [null]
+    }
+    const mappedPoints = points.map(pt => new THREE.Vector3(...pt));
+    let filteredPoints;
+    if (points.length < 1) {
+        filteredPoints = mappedPoints
+    } else {
+        filteredPoints = mappedPoints
+            .filter((v, i) => {
+                return i % 3 === 0
+            });
+    }
+    const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
+    let geometry = new THREE.TubeGeometry(curve, points.length, 0.08, 20);
+    let vertices = geometry.attributes.position.array
+    let indices = geometry.index?.array;
+    if(vertices!==undefined&&indices!==undefined){
+        return[vertices,indices]
+    }else{
+        return [null]
+    }
 }
