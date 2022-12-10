@@ -14,35 +14,38 @@ import Tooltip from '@mui/material/Tooltip';
 import { Debug, useBox, usePlane } from '@react-three/cannon'
 import { Physics, useSphere, useTrimesh } from '@react-three/cannon'
 
-let DrawingObject: {
-    points: {
-        [line: string]: Array<THREE.Vector3Tuple | undefined>
-    },
-    transforms: {
-        [line: string]: THREE.Matrix4 | undefined
-    }
-} | null = null
-let DrawingScene: THREE.Scene | null = null;
-let SelectedObject: THREE.Mesh | null = null;
-let selectedObjectIndex: string | null = null;
 
 type canvasFunctionsProps = {
     updateSelected: (index: string | null) => void;
+    updateSelectedObjectFunction:(mesh: THREE.Mesh|null) => void;
+    updateSelectedObjectIndexFunction:(string: string|null) => void;
+    updateIsObjectSelected:(val:boolean)=>void;
 }
-
-let latestStrokeId: null | string = makeid(8);
-let objectTransformMatrix: THREE.Matrix4 | null = null
-let objectTransformObject: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null = null
-let currentkeyPressed: string | null = null;
-
-let objectClicked = false;
-function SolidObject(props: { position: [number, number, number], index: string, type: 'cube' | 'sphere' | 'plane', objectRef: React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>> }) {
+ 
+// let objectClicked = false;
+function SolidObject(props: { 
+    position: [number, number, number], 
+    index: string, 
+    type: 'cube' | 'sphere' | 'plane', 
+    objectRef: React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>,
+    canvasFunctions:canvasFunctionsProps
+ }) {
     return (
         props.type === 'cube' || props.type === 'sphere' ?
-            <RoundedBox matrixAutoUpdate={true} scale={props.type === 'sphere' ? [1.4, 1.4, 1.4] : [1, 1, 1]} ref={props.objectRef} onClick={(event) => { SelectedObject = props.objectRef.current; selectedObjectIndex = props.index; }} radius={props.type === 'sphere' ? 0.5 : 0} smoothness={30} {...props}>
+            <RoundedBox matrixAutoUpdate={true} scale={props.type === 'sphere' ? [1.4, 1.4, 1.4] : [1, 1, 1]} ref={props.objectRef} onClick={(event) => { 
+                // SelectedObject = props.objectRef.current; 
+                props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
+                props.canvasFunctions.updateSelectedObjectIndexFunction(props.index)
+                // selectedObjectIndex = props.index; 
+                }} radius={props.type === 'sphere' ? 0.5 : 0} smoothness={30} {...props}>
                 <meshStandardMaterial color="white" />
             </RoundedBox> :
-            props.type === 'plane' ? <Plane matrixAutoUpdate={true} ref={props.objectRef} onClick={(event) => { SelectedObject = props.objectRef.current; selectedObjectIndex = props.index; }} args={[2, 2]} {...props}>
+            props.type === 'plane' ? <Plane matrixAutoUpdate={true} ref={props.objectRef} onClick={(event) => { 
+                // SelectedObject = props.objectRef.current; 
+                props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
+                props.canvasFunctions.updateSelectedObjectIndexFunction(props.index)
+                // selectedObjectIndex = props.index; 
+                }} args={[2, 2]} {...props}>
                 <meshStandardMaterial transparent={true} opacity={0.9} color="white" />
             </Plane> : null
     )
@@ -71,11 +74,6 @@ function TubeLine({ points, objectref, isDrawing }: {
     // )
     // console.log(isDrawing,newref);
 
-    useEffect(()=>{
-        if(!isDrawing){
-            console.log(objectref.current.geometry)
-        }
-    },[isDrawing])
 
     useEffect(() => {
         if (!points || points === undefined || points.length === 0 || points.length < 5) {
@@ -102,7 +100,7 @@ function TubeLine({ points, objectref, isDrawing }: {
 }
 
 
-function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict }
+function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed }
     : {
         points: THREE.Vector3Tuple[],
         isDrawing: boolean,
@@ -110,7 +108,8 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
         canvasFunctions: canvasFunctionsProps,
         transform: THREE.Matrix4 | undefined,
         updateTransform(id: string, transform: THREE.Matrix4): void,
-        transformDict: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null
+        transformDict: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null,
+        keyPressed:string|null
     }) {
 
     let oldref = useRef<THREE.Mesh>(null!)
@@ -175,16 +174,15 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
     }, [isDrawing])
 
     useEffect(() => {
-        if(index!==latestStrokeId){
-            return
-        }
+        // if(index!==latestStrokeId){
+        //     return
+        // }
         if (transformDict && ref.current) {
-            if (currentkeyPressed === 'AltLeft' && transformDict.scale !== undefined) {
+            if (keyPressed === 'AltLeft' && transformDict.scale !== undefined) {
                 let newScale = initialScale.z + transformDict.scale
                 ref.current.scale.set(newScale, newScale, newScale)
                 return
             }
-            // ref.current.applyMatrix4(objectTransformMatrix);
             let TransformedVector = new THREE.Vector3();
             if(initialPosition===null||transformDict.RelPos[4]===undefined){
                 return
@@ -271,7 +269,8 @@ var mouse = new THREE.Vector2();
 
 
 
-function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, deleteLine, loadLines, objectsInScene, transformDict }: {
+function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, deleteLine, loadLines, objectsInScene, 
+    transformDict, SelectedObject, keyPressed }: {
     mousePos: { x: number, y: number },
     lineNumber: string | null,
     depth: number,
@@ -287,7 +286,9 @@ function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, delet
         }
     } | null,
     objectsInScene: { index: string, type: 'plane' | 'cube' | 'sphere' }[],
-    transformDict: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion } | null
+    transformDict: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion } | null,
+    SelectedObject:THREE.Mesh|null,
+    keyPressed:string|null
 }) {
     const { camera, scene } = useThree();
     const [renderPoints, setRenderPoints] = useState<Array<THREE.Vector3Tuple | undefined>>([]);
@@ -354,19 +355,21 @@ function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, delet
         setRenderPoints([]);
     }, [lineNumber]);
 
-    useEffect(() => {
-        DrawingObject = { points: points, transforms: transforms };
-    }, [points, transforms])
-    useEffect(() => {
-        DrawingScene = scene;
-    }, [scene, points])
+    // useEffect(() => {
+    //     DrawingObject = { points: points, transforms: transforms };
+    // }, [points, transforms])
+    // useEffect(() => {
+    //     DrawingScene = scene;
+    // }, [scene, points])
     const [selected, setSelected] = React.useState<Object3D[]>([])
     const active = selected[0]
     useEffect(() => {
         if (active) {
-            objectClicked = true;
+            // objectClicked = true;
+            canvasFunctions.updateIsObjectSelected(true)
         } else {
-            objectClicked = false;
+            // objectClicked = false;
+            canvasFunctions.updateIsObjectSelected(false)
             canvasFunctions.updateSelected(null)
         }
     }, [active])
@@ -395,6 +398,7 @@ function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, delet
                             points={points[keyIndex] as THREE.Vector3Tuple[]}
                             updateTransform={updateTransform}
                             transform={transforms[keyIndex]}
+                            keyPressed={keyPressed}
                         />
                     ))
                 }
@@ -420,7 +424,7 @@ export default function SketchingCanvas_ObjectLinks() {
     const [mousePos, setMousePoint] = useState({ x: 0, y: 0 });
     const [objectsInScene, setObjectsInScene] = useState<{ type: 'sphere' | 'cube' | 'plane', index: string }[]>([]);
     const [isMouseDown, setMouseDown] = useState(false);
-    const [lineNumber, setLine] = useState<string | null>(latestStrokeId);
+    const [lineNumber, setLine] = useState<string | null>(makeid(8));
     const [isDrawing, setIsDrawing] = useState(false);
     const [depth, setDepth] = useState(0);
     const [Selected, setSelected] = useState<string | null>(null);
@@ -435,12 +439,25 @@ export default function SketchingCanvas_ObjectLinks() {
         }
     } | null>(null);
 
+
+    const [selectedObjectThreeD,setSelectedObjectThreeD] = useState<THREE.Mesh | null>(null);
+    const [selectedObjectIndexThreeD,setSelectedObjectIndex] = useState<string | null>(null);
+    const [keyPressed,setKeyPressed] = useState<string | null>(null);
+    const [isObjectSelected,setIsObjectSelected] = useState(false);
+    function updateSelectedObjectFunction(mesh:THREE.Mesh|null){
+        setSelectedObjectThreeD(mesh)
+    }
+    function updateSelectedObjectIndexFunction(string:string|null){
+        setSelectedObjectIndex(string)
+    }
+    function updateIsObjectSelected(val:boolean){
+        setIsObjectSelected(val)
+    }
     function updateSelected(index: string | null) {
         setSelected(index);
-        selectedObjectIndex = null
-        SelectedObject = null
+        setSelectedObjectIndex(null)
+        updateSelectedObjectFunction(null)
     };
-
     function updateDraggingTransformObject(object: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null, nullify = false) {
         if (!nullify) {
             setTransformDict(object)
@@ -455,9 +472,14 @@ export default function SketchingCanvas_ObjectLinks() {
 
     let canvasFunctions: canvasFunctionsProps = {
         updateSelected: updateSelected,
+        updateSelectedObjectFunction:updateSelectedObjectFunction,
+        updateSelectedObjectIndexFunction:updateSelectedObjectIndexFunction,
+        updateIsObjectSelected:updateIsObjectSelected
     }
+    const [PhysicsEnabled, setEnablePhysics] = useState(false)
     return (
         <>
+        <button style={{position:'absolute',zIndex:111111}} onClick={()=>setEnablePhysics(!PhysicsEnabled)}>{PhysicsEnabled?'pause':'play'}</button>
             <div style={{ height: '60%', position: 'absolute', zIndex: 2, padding: '10px', marginTop: 'calc((100vh - (60vh + 20px))/2)'}}>
                 <Slider
                     defaultValue={0}
@@ -477,18 +499,19 @@ export default function SketchingCanvas_ObjectLinks() {
             </div>
 
             <Canvas
-                onPointerMissed={() => { SelectedObject = null; selectedObjectIndex = null }}
+                onPointerMissed={() => { updateSelectedObjectFunction(null); updateSelectedObjectIndexFunction(null) }}
                 tabIndex={0}
                 onKeyUp={() => {
-                    currentkeyPressed = null
+                    setKeyPressed(null)
                 }}
                 onKeyDown={(e) => {
-                    currentkeyPressed = e.code;
+                    setKeyPressed(e.code)
                     if (e.code === "Delete" && Selected !== null) {
                         console.log('deleting', Selected)
 
                         // document.getRootNode.click()
-                        objectClicked = false;
+                        // objectClicked = false;
+                        updateIsObjectSelected(false)
                         updateSelected(null)
                         setDeleteLine(Selected);
                         setTimeout(() => {
@@ -496,10 +519,10 @@ export default function SketchingCanvas_ObjectLinks() {
                         }, 100);
 
                     }
-                    if (selectedObjectIndex && e.code === "Delete") {
+                    if (selectedObjectIndexThreeD && e.code === "Delete") {
                         let tempArr = [...objectsInScene];
                         tempArr.forEach((item, index) => {
-                            if (item.index === selectedObjectIndex) {
+                            if (item.index === selectedObjectIndexThreeD) {
                                 tempArr.splice(index, 1)
                             }
                         });
@@ -507,7 +530,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     }
                 }}
                 onMouseDown={(e) => {
-                    if (objectClicked) {
+                    if (isObjectSelected) {
                         return
                     }
                     if (e.button === 0) {
@@ -516,7 +539,7 @@ export default function SketchingCanvas_ObjectLinks() {
                 }}
                 onMouseUp={(e) => {
                     setMouseDown(false);
-                    if (objectClicked) {
+                    if (isObjectSelected) {
                         return
                     }
 
@@ -527,7 +550,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     setIsDrawing(false)
                 }}
                 onMouseMove={(e) => {
-                    if (objectClicked) {
+                    if (isObjectSelected) {
                         return
                     }
                     if (isMouseDown) {
@@ -536,11 +559,31 @@ export default function SketchingCanvas_ObjectLinks() {
                     }
                 }}
             >
-                <Physics>
+                <Physics isPaused={!PhysicsEnabled}>
                 <Debug color="black" scale={1.1}>
-                    <Sketch transformDict={transformDict} objectsInScene={objectsInScene} loadLines={loadLines} deleteLine={deleteLine} canvasFunctions={canvasFunctions} isDrawing={isDrawing} depth={depth} lineNumber={lineNumber} mousePos={mousePos} />
+                    <Sketch transformDict={transformDict} 
+                    objectsInScene={objectsInScene} 
+                    loadLines={loadLines} 
+                    deleteLine={deleteLine} 
+                    canvasFunctions={canvasFunctions} 
+                    isDrawing={isDrawing} 
+                    depth={depth} 
+                    lineNumber={lineNumber} 
+                    mousePos={mousePos} 
+                    SelectedObject={selectedObjectThreeD}
+                    keyPressed={keyPressed}
+                    />
                     {objectsInScene.map((item) => (
-                        <BaseObject updateDraggingTransformObject={updateDraggingTransformObject} key={item.index} item={item} isDrawing={isDrawing} index={item.index} />
+                        <BaseObject 
+                        updateDraggingTransformObject={updateDraggingTransformObject} 
+                        key={item.index} 
+                        item={item} 
+                        isDrawing={isDrawing} 
+                        index={item.index} 
+                        canvasFunctions={canvasFunctions}
+                        selectedObjectIndexThreeD={selectedObjectIndexThreeD}
+                        keyPressed={keyPressed}
+                        />
                     ))}
                     <OriginPlane position={[0, 0, 0]}/>
                 </Debug>
@@ -561,10 +604,17 @@ export default function SketchingCanvas_ObjectLinks() {
     )
 }
 
-function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: string }, isDrawing: boolean, index: string, updateDraggingTransformObject: (object: any, nullify?: boolean) => void }) {
+function BaseObject(props: { 
+    item: { type: 'sphere' | 'cube' | 'plane'; index: string }, 
+    isDrawing: boolean, index: string, 
+    updateDraggingTransformObject: (object: any, nullify?: boolean) => void,
+    canvasFunctions:canvasFunctionsProps,
+    selectedObjectIndexThreeD:string|null,
+    keyPressed:string|null,
+ }) {
     const transformref = useRef()
     // const objectRef = useRef<THREE.Mesh>(null!)
-    let [objectRef] = props.item.type==='sphere'?useSphere(() => ({ mass: 1, position:[0, 3, 0],args:[0.8]})):props.item.type==='cube'?useBox(() => ({ mass: 1, position: [0, 3, 0],args:[1,1,1]})):useBox(() => ({ mass: 1, position: [0, 8, 0],args:[2,2,0]}))
+    let [objectRef] = props.item.type==='sphere'?useSphere(() => ({ mass: 1, position:[0, 0, 0],args:[0.8]})):props.item.type==='cube'?useBox(() => ({ mass: 1, position: [0, 0, 0],args:[1,1,1]})):useBox(() => ({ mass: 1, position: [0, 8, 0],args:[2,2,0]}))
     useEffect(()=>{//@ts-ignore
         let vertices = objectRef.current?.geometry.attributes.position.array//@ts-ignore
         let indices = objectRef.current?.geometry.index?.array;
@@ -574,9 +624,11 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
     const [initialPosition, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
     useEffect(() => {
         if (isDraggingPivot) {
-            objectClicked = true;
+            // objectClicked = true;
+            props.canvasFunctions.updateIsObjectSelected(true)
         } else {
-            objectClicked = false
+            // objectClicked = false
+            props.canvasFunctions.updateIsObjectSelected(false)
         }
     }, [isDraggingPivot]);
 
@@ -601,8 +653,8 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
                 props.updateDraggingTransformObject(null, true)
             }}
             onDrag={(l, dl, w, dw) => {
-                // console.log(currentkeyPressed)
-                if (currentkeyPressed === 'AltLeft') {
+                let objectTransformObject: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null = null;
+                if (props.keyPressed === 'AltLeft') {
                     let quartn = new THREE.Quaternion()
                     let vec = new THREE.Vector3()
                     let scale = new THREE.Vector3()
@@ -617,7 +669,6 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
                 var rotation = new THREE.Quaternion();
                 var scale = new THREE.Vector3();
                 dl.decompose(vec, rotation, scale);
-                objectTransformMatrix = dl;
                 var tempVec = new THREE.Vector3();
                 var tempQuat = new THREE.Quaternion();
                 var temp = new THREE.Vector3();
@@ -642,11 +693,17 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
             autoTransform={true}
             anchor={[0, 0, 0]}
             annotationsClass={'transformValues'}
-            visible={selectedObjectIndex === props.item.index && !props.isDrawing || isDraggingPivot}
-            disableAxes={selectedObjectIndex === props.item.index && props.isDrawing && !isDraggingPivot}
-            disableSliders={selectedObjectIndex === props.item.index && props.isDrawing && !isDraggingPivot}
-            disableRotations={selectedObjectIndex === props.item.index && props.isDrawing && !isDraggingPivot}>
-            <SolidObject objectRef={objectRef as React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>} type={props.item.type} index={props.item.index} position={[0, 3, 0]} />
+            visible={props.selectedObjectIndexThreeD === props.item.index && !props.isDrawing || isDraggingPivot}
+            disableAxes={props.selectedObjectIndexThreeD === props.item.index && props.isDrawing && !isDraggingPivot}
+            disableSliders={props.selectedObjectIndexThreeD === props.item.index && props.isDrawing && !isDraggingPivot}
+            disableRotations={props.selectedObjectIndexThreeD === props.item.index && props.isDrawing && !isDraggingPivot}>
+            <SolidObject 
+            objectRef={objectRef as React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>} 
+            type={props.item.type} 
+            index={props.item.index} 
+            position={[0, 0, 0]}
+            canvasFunctions={props.canvasFunctions}
+             />
         </PivotControls>
     )
 }
