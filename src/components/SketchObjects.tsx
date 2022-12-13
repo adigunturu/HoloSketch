@@ -175,7 +175,7 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
     newref = useTrimesh(
         () => ({//@ts-ignore
             args: [newgeo[0], newgeo[1]],
-            mass: 1,
+            mass: 10,
         }),
         useRef<THREE.Mesh>(null),
     )
@@ -313,7 +313,7 @@ function TubeLine({ points, objectref, isDrawing }: {
                 });
         }
         const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
-        let geometry = new THREE.TubeGeometry(curve, points.length, 0.08, 20);
+        let geometry = new THREE.TubeGeometry(curve, points.length, 0.04, 20);
         const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
         setMesh({ material: material, geometry: geometry });
     }, [points])

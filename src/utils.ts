@@ -38,7 +38,7 @@ function generateGeometry(points:THREE.Vector3Tuple[]){
             });
     }
     const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
-    let geometry = new THREE.TubeGeometry(curve, points.length, 0.08, 20);
+    let geometry = new THREE.TubeGeometry(curve, points.length, 0.04, 20);
     let vertices = geometry.attributes.position.array
     let indices = geometry.index?.array;
     if(vertices!==undefined&&indices!==undefined){
