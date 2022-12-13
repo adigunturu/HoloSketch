@@ -22,7 +22,6 @@ type canvasFunctionsProps = {
     updateIsObjectSelected:(val:boolean)=>void;
 }
  
-// let objectClicked = false;
 function SolidObject(props: { 
     position: [number, number, number], 
     index: string, 
@@ -31,7 +30,7 @@ function SolidObject(props: {
     canvasFunctions:canvasFunctionsProps
  }) {
     return (
-        props.type === 'cube' || props.type === 'sphere' ?
+        props.type === 'cube' || props.type === 'sphere' ?  
             <RoundedBox matrixAutoUpdate={true} scale={props.type === 'sphere' ? [1.4, 1.4, 1.4] : [1, 1, 1]} ref={props.objectRef} onClick={(event) => { 
                 // SelectedObject = props.objectRef.current; 
                 props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
@@ -51,30 +50,12 @@ function SolidObject(props: {
     )
 }
 
-
 function TubeLine({ points, objectref, isDrawing }: { 
     points: THREE.Vector3Tuple[], 
     objectref: React.MutableRefObject<THREE.Mesh>,
     isDrawing:boolean }) {
 
     const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null)
-
-
-    // let newgeo = generateGeometry(points)
-    // let newref = null;
-    // if(newgeo[0]===null||newgeo[1]===null){
-    //     newgeo = [[0,0,0],[0,0,0]]
-    // }
-    // newref = useTrimesh(
-    //     () => ({//@ts-ignore
-    //         args: [newgeo[0], newgeo[1]],
-    //         mass: 1,
-    //     }),
-    //     useRef<THREE.Mesh>(null),
-    // )
-    // console.log(isDrawing,newref);
-
-
     useEffect(() => {
         if (!points || points === undefined || points.length === 0 || points.length < 5) {
             return
@@ -98,7 +79,6 @@ function TubeLine({ points, objectref, isDrawing }: {
     // @ts-ignore
     return (mesh && objectref&&objectref.current&&<mesh ref={objectref} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={mesh.geometry} material={mesh.material} />)
 }
-
 
 function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed }
     : {
@@ -267,8 +247,6 @@ var planeNormal = new THREE.Vector3();
 var point = new THREE.Vector3();
 var mouse = new THREE.Vector2();
 
-
-
 function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, deleteLine, loadLines, objectsInScene, 
     transformDict, SelectedObject, keyPressed }: {
     mousePos: { x: number, y: number },
@@ -355,12 +333,6 @@ function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, delet
         setRenderPoints([]);
     }, [lineNumber]);
 
-    // useEffect(() => {
-    //     DrawingObject = { points: points, transforms: transforms };
-    // }, [points, transforms])
-    // useEffect(() => {
-    //     DrawingScene = scene;
-    // }, [scene, points])
     const [selected, setSelected] = React.useState<Object3D[]>([])
     const active = selected[0]
     useEffect(() => {
@@ -406,8 +378,6 @@ function Sketch({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, delet
         </>
     )
 }
-
-
 
 //Origin Plane Function
 function OriginPlane(props:any) {
