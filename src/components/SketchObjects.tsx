@@ -5,9 +5,10 @@ import { useThree } from '@react-three/fiber'
 import { Object3D } from 'three';
 import { Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
 import { generateGeometry, getMeshCenterPoint } from '../utils';
-import { useTrimesh } from '@react-three/cannon'
+// import { useTrimesh } from '@react-three/cannon'
 import { PivotControls, Line } from '@react-three/drei';
 import { Line2 } from 'three/examples/jsm/lines/Line2';
+import { RigidBody } from '@react-three/rapier';
 
 type canvasFunctionsProps = {
     updateSelected: (index: string | null) => void;
@@ -166,20 +167,20 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
         keyPressed:string|null
     }) {
 
-    let oldref = useRef<THREE.Mesh>(null!)
-    let newgeo = generateGeometry(points)
-    let newref = null;
-    if(newgeo[0]===null||newgeo[1]===null){
-        newgeo = [[0,0,0],[0,0,0]]
-    }
-    newref = useTrimesh(
-        () => ({//@ts-ignore
-            args: [newgeo[0], newgeo[1]],
-            mass: 10,
-        }),
-        useRef<THREE.Mesh>(null),
-    )
-    const ref = newref[0]
+    let ref = useRef<THREE.Mesh>(null!)
+    // let newgeo = generateGeometry(points)
+    // let newref = null;
+    // if(newgeo[0]===null||newgeo[1]===null){
+    //     newgeo = [[0,0,0],[0,0,0]]
+    // }
+    // newref = useTrimesh(
+    //     () => ({//@ts-ignore
+    //         args: [newgeo[0], newgeo[1]],
+    //         mass: 10,
+    //     }),
+    //     useRef<THREE.Mesh>(null),
+    // )
+    // const ref = newref[0]
 
     const pivotRef = useRef<THREE.Group>(null!)
     const [hovered, hover] = useState(false)
@@ -302,6 +303,9 @@ function TubeLine({ points, objectref, isDrawing }: {
         if (!points || points === undefined || points.length === 0 || points.length < 5) {
             return
         }
+        // if(isDrawing){
+        //     return
+        // }
         const mappedPoints = points.map(pt => new THREE.Vector3(...pt));
         let filteredPoints;
         if (points.length < 1) {
@@ -319,5 +323,19 @@ function TubeLine({ points, objectref, isDrawing }: {
     }, [points])
 
     // @ts-ignore
-    return (mesh && objectref&&objectref.current&&<mesh ref={objectref} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={mesh.geometry} material={mesh.material} />)
+    return (mesh && !isDrawing?
+    <RigidBody colliders={'hull'}>
+    <mesh ref={objectref} 
+        castShadow={true} 
+        receiveShadow={true} 
+        frustumCulled={true} 
+        geometry={mesh.geometry} 
+        material={mesh.material} />
+    </RigidBody>:mesh&&isDrawing?<mesh ref={objectref} 
+        castShadow={true} 
+        receiveShadow={true} 
+        frustumCulled={true} 
+        geometry={mesh.geometry} 
+        material={mesh.material} />:null
+    )
 }

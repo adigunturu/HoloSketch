@@ -5,8 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Canvas, extend, useThree } from '@react-three/fiber'
 import { GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, PerspectiveCamera, PivotControls, Plane, RoundedBox, Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
 import Slider from '@mui/material/Slider';
-import { Debug} from '@react-three/cannon'
-import { Physics} from '@react-three/cannon'
+import { Physics, RigidBody, Debug } from "@react-three/rapier";
 import SolidObject from './components/SolidObject';
 import { makeid} from './utils';
 import SketchObjects from './components/SketchObjects';
@@ -159,8 +158,8 @@ export default function SketchingCanvas_ObjectLinks() {
                     }
                 }}
             >
-                <Physics isPaused={!PhysicsEnabled}>
-                <Debug color="black" scale={1.1}>
+                <Physics paused={!PhysicsEnabled}>
+                    {/* <Debug /> */}
                     <SketchObjects transformDict={transformDict} 
                     objectsInScene={objectsInScene} 
                     loadLines={loadLines} 
@@ -185,8 +184,7 @@ export default function SketchingCanvas_ObjectLinks() {
                         keyPressed={keyPressed}
                         />
                     ))}
-                    <PhysicsPlane position={[0, 0, 0]}/>
-                </Debug>
+                    <PhysicsPlane/>
                 </Physics>
                     <OrthographicCamera makeDefault zoom={80} position={[10, 4, 4]} />
                     <ViewController />
@@ -198,7 +196,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     </GizmoHelper>
                     <ambientLight intensity={0.5} />
                     <spotLight position={[20, 4, 10]} angle={0.60} penumbra={1} />
-                    <gridHelper visible={true} />
+                    <gridHelper position={[0,-3,0]} visible={true} />
             </Canvas>
         </>
     )

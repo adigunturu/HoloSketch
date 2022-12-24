@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import * as React from 'react';
-import { useSphere, useBox } from '@react-three/cannon'
+// import { useSphere, useBox } from '@react-three/cannon'
 import { PivotControls, RoundedBox, Plane} from '@react-three/drei';
+import { RigidBody } from '@react-three/rapier';
 
 
 type canvasFunctionsProps = {
@@ -21,8 +22,8 @@ export default function SolidObject(props: {
     keyPressed:string|null,
  }) {
     const transformref = useRef()
-    // const objectRef = useRef<THREE.Mesh>(null!)
-    let [objectRef] = props.item.type==='sphere'?useSphere(() => ({ mass: 1, position:[0, 0, 0],args:[0.8]})):props.item.type==='cube'?useBox(() => ({ mass: 1, position: [0, 0, 0],args:[1,1,1]})):useBox(() => ({ mass: 1, position: [0, 8, 0],args:[2,2,0]}))
+    const objectRef = useRef<THREE.Mesh>(null!)
+    // let [objectRef] = props.item.type==='sphere'?useSphere(() => ({ mass: 1, position:[0, 0, 0],args:[0.8]})):props.item.type==='cube'?useBox(() => ({ mass: 1, position: [0, 0, 0],args:[1,1,1]})):useBox(() => ({ mass: 1, position: [0, 8, 0],args:[2,2,0]}))
     useEffect(()=>{//@ts-ignore
         let vertices = objectRef.current?.geometry.attributes.position.array//@ts-ignore
         let indices = objectRef.current?.geometry.index?.array;
@@ -109,7 +110,7 @@ export default function SolidObject(props: {
             objectRef={objectRef as React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>} 
             type={props.item.type} 
             index={props.item.index} 
-            position={[0, 0, 0]}
+            position={[0, -2, 0]}
             canvasFunctions={props.canvasFunctions}
              />
         </PivotControls>
@@ -124,7 +125,8 @@ function Box(props: {
     canvasFunctions:canvasFunctionsProps
  }) {
     return (
-        props.type === 'cube' || props.type === 'sphere' ?  
+        <RigidBody colliders={'hull'}>
+        {props.type === 'cube' || props.type === 'sphere' ?  
             <RoundedBox matrixAutoUpdate={true} scale={props.type === 'sphere' ? [1.4, 1.4, 1.4] : [1, 1, 1]} ref={props.objectRef} onClick={(event) => { 
                 // SelectedObject = props.objectRef.current; 
                 props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
@@ -140,6 +142,7 @@ function Box(props: {
                 // selectedObjectIndex = props.index; 
                 }} args={[2, 2]} {...props}>
                 <meshStandardMaterial transparent={true} opacity={0.9} color="white" />
-            </Plane> : null
+            </Plane> : null}
+        </RigidBody>
     )
 }
