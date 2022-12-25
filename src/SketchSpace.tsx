@@ -5,12 +5,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Canvas, extend, useThree } from '@react-three/fiber'
 import { GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, PerspectiveCamera, PivotControls, Plane, RoundedBox, Select, TransformControls, useCursor, useSelect } from '@react-three/drei';
 import Slider from '@mui/material/Slider';
-import { Debug} from '@react-three/cannon'
-import { Physics} from '@react-three/cannon'
 import SolidObject from './components/SolidObject';
 import { makeid} from './utils';
 import SketchObjects from './components/SketchObjects';
-import { PhysicsPlane, LabelToolTip } from './utilComponents';
+import { LabelToolTip } from './utilComponents';
 import ViewController from './components/ViewController';
 
 type canvasFunctionsProps = {
@@ -159,8 +157,6 @@ export default function SketchingCanvas_ObjectLinks() {
                     }
                 }}
             >
-                <Physics isPaused={!PhysicsEnabled}>
-                <Debug color="black" scale={1.1}>
                     <SketchObjects transformDict={transformDict} 
                     objectsInScene={objectsInScene} 
                     loadLines={loadLines} 
@@ -185,9 +181,6 @@ export default function SketchingCanvas_ObjectLinks() {
                         keyPressed={keyPressed}
                         />
                     ))}
-                    <PhysicsPlane position={[0, 0, 0]}/>
-                </Debug>
-                </Physics>
                     <OrthographicCamera makeDefault zoom={80} position={[10, 4, 4]} />
                     <ViewController />
                     <GizmoHelper

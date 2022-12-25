@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import * as React from 'react';
-import { useSphere, useBox } from '@react-three/cannon'
 import { PivotControls, RoundedBox, Plane} from '@react-three/drei';
 
 
@@ -21,8 +20,7 @@ export default function SolidObject(props: {
     keyPressed:string|null,
  }) {
     const transformref = useRef()
-    // const objectRef = useRef<THREE.Mesh>(null!)
-    let [objectRef] = props.item.type==='sphere'?useSphere(() => ({ mass: 1, position:[0, 0, 0],args:[0.8]})):props.item.type==='cube'?useBox(() => ({ mass: 1, position: [0, 0, 0],args:[1,1,1]})):useBox(() => ({ mass: 1, position: [0, 8, 0],args:[2,2,0]}))
+    const objectRef = useRef<THREE.Mesh>(null!)
     useEffect(()=>{//@ts-ignore
         let vertices = objectRef.current?.geometry.attributes.position.array//@ts-ignore
         let indices = objectRef.current?.geometry.index?.array;
