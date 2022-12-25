@@ -24,7 +24,6 @@ export default function SolidObject(props: {
     useEffect(()=>{//@ts-ignore
         let vertices = objectRef.current?.geometry.attributes.position.array//@ts-ignore
         let indices = objectRef.current?.geometry.index?.array;
-        console.log(vertices, indices)
     },[])
     const [isDraggingPivot, setDraggingPivot] = useState(false);
     const [initialPosition, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
