@@ -10,6 +10,7 @@ import { makeid} from './utils';
 import SketchObjects from './components/SketchObjects';
 import { LabelToolTip } from './utilComponents';
 import ViewController from './components/ViewController';
+import TweenExp from './components/TweenExp';
 
 type canvasFunctionsProps = {
     updateSelected: (index: string | null) => void;
@@ -65,7 +66,7 @@ export default function SketchingCanvas_ObjectLinks() {
     }
 
     useEffect(() => {
-        setObjectsInScene([{ type: 'cube', index: makeid(8) }])
+        // setObjectsInScene([{ type: 'cube', index: makeid(8) }])
     }, [])
 
     let canvasFunctions: canvasFunctionsProps = {
@@ -77,8 +78,8 @@ export default function SketchingCanvas_ObjectLinks() {
     const [PhysicsEnabled, setEnablePhysics] = useState(false)
     return (
         <>
-        <button style={{position:'absolute',zIndex:111111}} onClick={()=>setEnablePhysics(!PhysicsEnabled)}>{PhysicsEnabled?'pause':'play'}</button>
-            <div style={{ height: '60%', position: 'absolute', zIndex: 2, padding: '10px', marginTop: 'calc((100vh - (60vh + 20px))/2)'}}>
+        {/* <button style={{position:'absolute',zIndex:111111}} onClick={()=>setEnablePhysics(!PhysicsEnabled)}>{PhysicsEnabled?'pause':'play'}</button> */}
+            {/* <div style={{ height: '60%', position: 'absolute', zIndex: 2, padding: '10px', marginTop: 'calc((100vh - (60vh + 20px))/2)'}}>
                 <Slider
                     defaultValue={0}
                     step={1}
@@ -94,7 +95,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     value={depth}
                     onChange={(e, v) => setDepth(v as number)}
                 />
-            </div>
+            </div> */}
 
             <Canvas
                 onPointerMissed={() => { updateSelectedObjectFunction(null); updateSelectedObjectIndexFunction(null) }}
@@ -157,6 +158,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     }
                 }}
             >
+                    <TweenExp />
                     <SketchObjects transformDict={transformDict} 
                     objectsInScene={objectsInScene} 
                     loadLines={loadLines} 
