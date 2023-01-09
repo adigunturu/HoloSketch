@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import * as React from 'react';
 import { useFrame } from '@react-three/fiber'
 
-export default function TweenExp() {
+export default function TweenExp(props: { first: THREE.Vector3Tuple[], second: THREE.Vector3Tuple[] }) {
     let points = [
         [
             0,
@@ -860,28 +860,56 @@ export default function TweenExp() {
         ]
     ];
 
-    const [geo1,setGeo1] = useState(getGeometry(points));
-    const [geo2,setGeo2] = useState(getGeometry(points2));
-    const [geonew,setGeonew] = useState(getGeometry(points));
-    const [theta,setTheta] = useState(0);
-    const myMesh =  useRef<THREE.Mesh>(null!);
-    const mesh2 =  useRef<THREE.Mesh>(null!);
-    const meshNew =  useRef<THREE.Mesh>(null!);
-    useFrame(({clock}) => {
-        let tempTheta = theta + 0.06
-        setTheta(tempTheta);
-        let amt = (Math.sin(tempTheta) + 1) / 2;
+    // const [geo1,setGeo1] = useState(getGeometry(props.first));
+    // const [geo2,setGeo2] = useState(getGeometry(props.second));
+    const [geonew, setGeonew] = useState<{
+        geometry: THREE.TubeGeometry;
+        material: THREE.MeshPhongMaterial;
+    } | null>(null);
+    const [pointsOne, setPointsOne] = useState<THREE.Vector3Tuple[] | null>(null);
+    const [pointsTwo, setPointsTwo] = useState<THREE.Vector3Tuple[] | null>(null);
 
-        let lerpedPoints = []
-        for (let i = 0; i < points.length; i++) {
-            let cv = points[i];
-            let tv = points2[i];
-            let x = THREE.MathUtils.lerp(cv[0], tv[0], amt);
-            let y = THREE.MathUtils.lerp(cv[1], tv[1], amt);
-            let z = THREE.MathUtils.lerp(cv[2], tv[2], amt);
-            lerpedPoints.push([x,y,z])
+    const [theta, setTheta] = useState(0);
+    const myMesh = useRef<THREE.Mesh>(null!);
+    const mesh2 = useRef<THREE.Mesh>(null!);
+    const meshNew = useRef<THREE.Mesh>(null!);
+
+
+
+    useEffect(() => {
+        if (props.first && props.second) {
+            if (props.first.length > props.second.length) {
+                //
+                setPointsOne(props.first)
+                setPointsTwo(getNewPointsfromLength(props.second, props.first.length))
+                //
+            } else if (props.first.length < props.second.length) {
+                //equal
+                setPointsTwo(props.second)
+                setPointsOne(getNewPointsfromLength(props.first, props.second.length))
+            }
         }
+    }, [])
+
+    useFrame(({ clock }) => {
+        if (pointsOne && pointsTwo) {
+            let tempTheta = theta + 0.06
+            setTheta(tempTheta);
+            let amt = (Math.sin(tempTheta) + 1) / 2;
+
+            let lerpedPoints = []
+            for (let i = 0; i < pointsOne.length; i++) {
+                let cv = pointsOne[i];
+                let tv = pointsTwo[i];
+                if(cv&&tv&&cv[0]&&tv[0]){
+                    let x = THREE.MathUtils.lerp(cv[0], tv[0], amt);
+                    let y = THREE.MathUtils.lerp(cv[1], tv[1], amt);
+                    let z = THREE.MathUtils.lerp(cv[2], tv[2], amt);
+                    lerpedPoints.push([x, y, z])
+                }
+            }
             setGeonew(getGeometry(lerpedPoints))
+        }
     });
     // const tween = new TWEEN.Tween({x:0})
     // useEffect(()=>{
@@ -889,22 +917,30 @@ export default function TweenExp() {
     //     tween.start()
     //     tween.repeat(Infinity)
     //     tween.onUpdate((coords)=>{
-            
+
     //     });
     // },[])
-    
+
 
     return (
-    <>
-    <mesh ref={myMesh} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={geo1.geometry} material={geo1.material}/>
-    <mesh ref={mesh2} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={geo2.geometry} material={geo2.material}/>
-    <mesh ref={meshNew} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={geonew.geometry} material={geonew.material}/>
-    </>
+        <>
+            {/* <mesh ref={myMesh} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={geo1.geometry} material={geo1.material}/>
+    <mesh ref={mesh2} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={geo2.geometry} material={geo2.material}/> */}
+            {geonew &&
+                <mesh
+                    ref={meshNew}
+                    castShadow={true}
+                    receiveShadow={true}
+                    frustumCulled={true}
+                    geometry={geonew.geometry}
+                    material={geonew.material} />
+            }
+        </>
     )
 
 }
 
-function getGeometry(points:number[][]){
+function getGeometry(points: number[][]) {
     const mappedPoints = points.map(pt => new THREE.Vector3(...pt));
     let filteredPoints;
     if (points.length < 1) {
@@ -918,5 +954,13 @@ function getGeometry(points:number[][]){
     const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
     let geometry = new THREE.TubeGeometry(curve, points.length, 0.04, 20);
     const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-    return {geometry, material}
+    return { geometry, material }
+}
+
+function getNewPointsfromLength(points: THREE.Vector3Tuple[], length: number) {
+    const mappedPoints = points.map(pt => new THREE.Vector3(...pt));
+    const curve = new THREE.CatmullRomCurve3(mappedPoints, false, 'centripetal', 0);
+    let newPoints: THREE.Vector3[] | number[][] = curve.getPoints(length);
+    newPoints = newPoints.map((vecthree) => [vecthree.x, vecthree.y, vecthree.z]);
+    return (newPoints as THREE.Vector3Tuple[])
 }

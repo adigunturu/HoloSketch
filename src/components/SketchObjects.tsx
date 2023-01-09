@@ -7,6 +7,7 @@ import { Select, TransformControls, useCursor, useSelect } from '@react-three/dr
 import { generateGeometry, getMeshCenterPoint } from '../utils';
 import { PivotControls, Line } from '@react-three/drei';
 import { Line2 } from 'three/examples/jsm/lines/Line2';
+import TweenExp from './TweenExp';
 
 type canvasFunctionsProps = {
     updateSelected: (index: string | null) => void;
@@ -15,7 +16,7 @@ type canvasFunctionsProps = {
     updateIsObjectSelected:(val:boolean)=>void;
 }
 
-export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, deleteLine, loadLines, objectsInScene,
+export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, deleteLine, typeToggle, objectsInScene,
     transformDict, SelectedObject, keyPressed }: {
         mousePos: { x: number, y: number },
         lineNumber: string | null,
@@ -23,14 +24,7 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
         isDrawing: boolean,
         canvasFunctions: canvasFunctionsProps,
         deleteLine: string | null,
-        loadLines: {
-            points: {
-                [line: string]: Array<THREE.Vector3Tuple | undefined>
-            },
-            transforms: {
-                [line: string]: THREE.Matrix4 | undefined
-            }
-        } | null,
+        typeToggle: 'physics'|'morph',
         objectsInScene: { index: string, type: 'plane' | 'cube' | 'sphere' }[],
         transformDict: { RelPos: [x: number, y: number, z: number, distance: number, direction: THREE.Vector3], rotation: THREE.Quaternion } | null,
         SelectedObject: THREE.Mesh | null,
@@ -96,12 +90,12 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
         }
     }, [deleteLine]);
 
-    useEffect(() => {
-        if (loadLines !== null) {
-            setPoints(loadLines.points);
-            setTransforms(loadLines.transforms);
-        }
-    }, [loadLines])
+    // useEffect(() => {
+    //     if (loadLines !== null) {
+    //         setPoints(loadLines.points);
+    //         setTransforms(loadLines.transforms);
+    //     }
+    // }, [loadLines])
 
     useEffect(() => {
         setRenderPoints([]);
@@ -149,6 +143,11 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
                     ))
                 }
             </Select>
+            {typeToggle === 'morph' && !isDrawing && Object.keys(points).length >= 2 ?
+                <TweenExp
+                    first={points[Object.keys(points).at(-1) as string] as THREE.Vector3Tuple[]}
+                    second={points[Object.keys(points).at(-2) as string] as THREE.Vector3Tuple[]}
+                /> : null}
         </>
     )
 }

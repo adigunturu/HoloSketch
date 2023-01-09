@@ -8,9 +8,11 @@ import Slider from '@mui/material/Slider';
 import SolidObject from './components/SolidObject';
 import { makeid} from './utils';
 import SketchObjects from './components/SketchObjects';
-import { LabelToolTip } from './utilComponents';
+import { LabelToolTip, PhysicsPlane } from './utilComponents';
 import ViewController from './components/ViewController';
 import TweenExp from './components/TweenExp';
+import { ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Physics } from '@react-three/rapier';
 
 type canvasFunctionsProps = {
     updateSelected: (index: string | null) => void;
@@ -75,7 +77,7 @@ export default function SketchingCanvas_ObjectLinks() {
         updateSelectedObjectIndexFunction:updateSelectedObjectIndexFunction,
         updateIsObjectSelected:updateIsObjectSelected
     }
-    const [PhysicsEnabled, setEnablePhysics] = useState(false)
+    const [typeToggle, setTypeToggle] = useState<'physics'|'morph'>('morph')
     return (
         <>
         {/* <button style={{position:'absolute',zIndex:111111}} onClick={()=>setEnablePhysics(!PhysicsEnabled)}>{PhysicsEnabled?'pause':'play'}</button> */}
@@ -96,6 +98,23 @@ export default function SketchingCanvas_ObjectLinks() {
                     onChange={(e, v) => setDepth(v as number)}
                 />
             </div> */}
+
+            <div style={{position:'absolute',zIndex:10}}>
+                <ToggleButtonGroup
+                    color="primary"
+                    value={typeToggle}
+                    exclusive
+                    onChange={(e, newVal) => {
+                        setTypeToggle(newVal)
+                    }}
+                    aria-label="Platform"
+                >
+                    <ToggleButton value="physics">Phyiscs</ToggleButton>
+                    <ToggleButton value="morph">Morph</ToggleButton>
+                    {/* <ToggleButton value="ios">iOS</ToggleButton> */}
+                </ToggleButtonGroup>
+            </div>
+
 
             <Canvas
                 onPointerMissed={() => { updateSelectedObjectFunction(null); updateSelectedObjectIndexFunction(null) }}
@@ -158,10 +177,10 @@ export default function SketchingCanvas_ObjectLinks() {
                     }
                 }}
             >
-                    <TweenExp />
+                {/* <Physics paused={typeToggle==="physics"}> */}
                     <SketchObjects transformDict={transformDict} 
                     objectsInScene={objectsInScene} 
-                    loadLines={loadLines} 
+                    typeToggle={typeToggle} 
                     deleteLine={deleteLine} 
                     canvasFunctions={canvasFunctions} 
                     isDrawing={isDrawing} 
@@ -183,8 +202,10 @@ export default function SketchingCanvas_ObjectLinks() {
                         keyPressed={keyPressed}
                         />
                     ))}
+                {/* </Physics> */}
                     <OrthographicCamera makeDefault zoom={80} position={[10, 4, 4]} />
                     <ViewController />
+                    {/* {typeToggle==='physics'&&<PhysicsPlane/>} */}
                     <GizmoHelper
                         alignment="bottom-right" // widget alignment within scene
                         margin={[80, 80]} // widget margins (X, Y)
@@ -193,7 +214,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     </GizmoHelper>
                     <ambientLight intensity={0.5} />
                     <spotLight position={[20, 4, 10]} angle={0.60} penumbra={1} />
-                    <gridHelper visible={true} />
+                    <gridHelper position={[0,-3,0]} visible={true} />
             </Canvas>
         </>
     )
