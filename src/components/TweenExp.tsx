@@ -877,7 +877,7 @@ export default function TweenExp(props: { first: THREE.Vector3Tuple[], second: T
 
 
     useEffect(() => {
-        if (props.first && props.second) {
+        if (props.first && props.second &&props.first.length>2&&props.second.length>2) {
             if (props.first.length > props.second.length) {
                 //
                 setPointsOne(props.first)

@@ -7,7 +7,7 @@ import { GizmoHelper, GizmoViewcube, GizmoViewport, Line, OrthographicCamera, Pe
 import Slider from '@mui/material/Slider';
 import SolidObject from './components/SolidObject';
 import { makeid} from './utils';
-import SketchObjects from './components/SketchObjects';
+import SketchObjects from './components/SketchObjects/SketchObjects';
 import { LabelToolTip, PhysicsPlane, UITypeFunction } from './utilComponents';
 import ViewController from './components/ViewController';
 import TweenExp from './components/TweenExp';
@@ -121,7 +121,7 @@ export default function SketchingCanvas_ObjectLinks() {
                 >
                     <ToggleButton value="physics">Physics</ToggleButton>
                     <ToggleButton value="morph">Morph</ToggleButton>
-                    {/* <ToggleButton value="ios">iOS</ToggleButton> */}
+                    <ToggleButton value="transform">Linear Transformation</ToggleButton>
                 </ToggleButtonGroup>
             </div>
 
@@ -201,7 +201,7 @@ export default function SketchingCanvas_ObjectLinks() {
                         SelectedObject={selectedObjectThreeD}
                         keyPressed={keyPressed}
                     />
-                        {objectsInScene.map((item) => (
+                        {typeToggle!=='morph'&&objectsInScene.map((item) => (
                             <SolidObject
                                 updateDraggingTransformObject={updateDraggingTransformObject}
                                 key={item.index}
