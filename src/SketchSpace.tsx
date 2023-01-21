@@ -8,7 +8,7 @@ import Slider from '@mui/material/Slider';
 import SolidObject from './components/SolidObject';
 import { makeid} from './utils';
 import SketchObjects from './components/SketchObjects';
-import { LabelToolTip, PhysicsPlane } from './utilComponents';
+import { LabelToolTip, PhysicsPlane, UITypeFunction } from './utilComponents';
 import ViewController from './components/ViewController';
 import TweenExp from './components/TweenExp';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
@@ -68,7 +68,7 @@ export default function SketchingCanvas_ObjectLinks() {
     }
 
     useEffect(() => {
-        // setObjectsInScene([{ type: 'cube', index: makeid(8) }])
+        setObjectsInScene([{ type: 'cube', index: makeid(8) }])
     }, [])
 
     let canvasFunctions: canvasFunctionsProps = {
@@ -78,6 +78,7 @@ export default function SketchingCanvas_ObjectLinks() {
         updateIsObjectSelected:updateIsObjectSelected
     }
     const [typeToggle, setTypeToggle] = useState<'physics'|'morph'>('morph')
+    const [physicsPaused, setPhysicsPaused] = useState(true)
     return (
         <>
         {/* <button style={{position:'absolute',zIndex:111111}} onClick={()=>setEnablePhysics(!PhysicsEnabled)}>{PhysicsEnabled?'pause':'play'}</button> */}
@@ -98,7 +99,16 @@ export default function SketchingCanvas_ObjectLinks() {
                     onChange={(e, v) => setDepth(v as number)}
                 />
             </div> */}
-
+            {typeToggle==='physics'&&<button 
+            onClick={()=>setPhysicsPaused(!physicsPaused)}
+            style={{
+                position:'absolute',
+                top:50,
+                left:0,
+                zIndex:1000
+            }}>
+                {physicsPaused?"Play":"Pause"}
+            </button>}
             <div style={{position:'absolute',zIndex:10}}>
                 <ToggleButtonGroup
                     color="primary"
@@ -109,7 +119,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     }}
                     aria-label="Platform"
                 >
-                    <ToggleButton value="physics">Phyiscs</ToggleButton>
+                    <ToggleButton value="physics">Physics</ToggleButton>
                     <ToggleButton value="morph">Morph</ToggleButton>
                     {/* <ToggleButton value="ios">iOS</ToggleButton> */}
                 </ToggleButtonGroup>
@@ -177,35 +187,38 @@ export default function SketchingCanvas_ObjectLinks() {
                     }
                 }}
             >
-                {/* <Physics paused={typeToggle==="physics"}> */}
-                    <SketchObjects transformDict={transformDict} 
-                    objectsInScene={objectsInScene} 
-                    typeToggle={typeToggle} 
-                    deleteLine={deleteLine} 
-                    canvasFunctions={canvasFunctions} 
-                    isDrawing={isDrawing} 
-                    depth={depth} 
-                    lineNumber={lineNumber} 
-                    mousePos={mousePos} 
-                    SelectedObject={selectedObjectThreeD}
-                    keyPressed={keyPressed}
-                    />
-                    {objectsInScene.map((item) => (
-                        <SolidObject 
-                        updateDraggingTransformObject={updateDraggingTransformObject} 
-                        key={item.index} 
-                        item={item} 
-                        isDrawing={isDrawing} 
-                        index={item.index} 
+                <UITypeFunction pause={physicsPaused} type={typeToggle}>
+                    <>
+                    <SketchObjects transformDict={transformDict}
+                        objectsInScene={objectsInScene}
+                        typeToggle={typeToggle}
+                        deleteLine={deleteLine}
                         canvasFunctions={canvasFunctions}
-                        selectedObjectIndexThreeD={selectedObjectIndexThreeD}
+                        isDrawing={isDrawing}
+                        depth={depth}
+                        lineNumber={lineNumber}
+                        mousePos={mousePos}
+                        SelectedObject={selectedObjectThreeD}
                         keyPressed={keyPressed}
-                        />
-                    ))}
-                {/* </Physics> */}
+                    />
+                        {objectsInScene.map((item) => (
+                            <SolidObject
+                                updateDraggingTransformObject={updateDraggingTransformObject}
+                                key={item.index}
+                                item={item}
+                                isDrawing={isDrawing}
+                                index={item.index}
+                                canvasFunctions={canvasFunctions}
+                                selectedObjectIndexThreeD={selectedObjectIndexThreeD}
+                                keyPressed={keyPressed}
+                                typeToggle={typeToggle}
+                            />
+                        ))}
+                        {typeToggle==='physics'&&<PhysicsPlane/>}
+                    </>
+                </UITypeFunction>
                     <OrthographicCamera makeDefault zoom={80} position={[10, 4, 4]} />
                     <ViewController />
-                    {/* {typeToggle==='physics'&&<PhysicsPlane/>} */}
                     <GizmoHelper
                         alignment="bottom-right" // widget alignment within scene
                         margin={[80, 80]} // widget margins (X, Y)

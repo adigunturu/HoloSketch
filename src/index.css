@@ -23,3 +23,7 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #88888888; 
 }
+
+iframe#webpack-dev-server-client-overlay {
+  display: none;
+}

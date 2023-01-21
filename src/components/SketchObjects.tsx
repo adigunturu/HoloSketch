@@ -8,6 +8,9 @@ import { generateGeometry, getMeshCenterPoint } from '../utils';
 import { PivotControls, Line } from '@react-three/drei';
 import { Line2 } from 'three/examples/jsm/lines/Line2';
 import TweenExp from './TweenExp';
+import { UIType } from '../@types';
+import { DynamicObject } from '../utilComponents';
+import { RigidBody } from '@react-three/rapier';
 
 type canvasFunctionsProps = {
     updateSelected: (index: string | null) => void;
@@ -24,7 +27,7 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
         isDrawing: boolean,
         canvasFunctions: canvasFunctionsProps,
         deleteLine: string | null,
-        typeToggle: 'physics'|'morph',
+        typeToggle: UIType,
         objectsInScene: { index: string, type: 'plane' | 'cube' | 'sphere' }[],
         transformDict: { RelPos: [x: number, y: number, z: number, distance: number, direction: THREE.Vector3], rotation: THREE.Quaternion } | null,
         SelectedObject: THREE.Mesh | null,
@@ -139,6 +142,7 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
                             updateTransform={updateTransform}
                             transform={transforms[keyIndex]}
                             keyPressed={keyPressed}
+                            typeToggle={typeToggle}
                         />
                     ))
                 }
@@ -152,7 +156,7 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
     )
 }
 
-function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed }
+function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed, typeToggle }
     : {
         points: THREE.Vector3Tuple[],
         isDrawing: boolean,
@@ -161,7 +165,8 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
         transform: THREE.Matrix4 | undefined,
         updateTransform(id: string, transform: THREE.Matrix4): void,
         transformDict: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null,
-        keyPressed:string|null
+        keyPressed:string|null,
+        typeToggle:UIType
     }) {
 
     let oldref = useRef<THREE.Mesh>(null!)
@@ -283,17 +288,22 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
                 onPointerOut={() => hover(false)}
             /> */}
 
-            <TubeLine objectref={ref as React.MutableRefObject<THREE.Mesh>} points={points} isDrawing={isDrawing} />
+            <TubeLine 
+            objectref={ref as React.MutableRefObject<THREE.Mesh>} 
+            points={points} 
+            isDrawing={isDrawing}
+            typeToggle={typeToggle}
+             />
 
 
         </PivotControls>
     )
 }
 
-function TubeLine({ points, objectref, isDrawing }: { 
+function TubeLine({ points, objectref, isDrawing, typeToggle }: { 
     points: THREE.Vector3Tuple[], 
     objectref: React.MutableRefObject<THREE.Mesh>,
-    isDrawing:boolean }) {
+    isDrawing:boolean, typeToggle:UIType }) {
 
     const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null)
     useEffect(() => {
@@ -317,5 +327,19 @@ function TubeLine({ points, objectref, isDrawing }: {
     }, [points])
 
     // @ts-ignore
-    return (mesh &&<mesh ref={objectref} castShadow={true} receiveShadow={true} frustumCulled={true} geometry={mesh.geometry} material={mesh.material} />)
+    return (mesh && !isDrawing && typeToggle==='physics' ?
+        <RigidBody colliders={'hull'}>
+            <mesh ref={objectref}
+                castShadow={true}
+                receiveShadow={true}
+                frustumCulled={true}
+                geometry={mesh.geometry}
+                material={mesh.material} />
+        </RigidBody> : mesh ? <mesh ref={objectref}
+            castShadow={true}
+            receiveShadow={true}
+            frustumCulled={true}
+            geometry={mesh.geometry}
+            material={mesh.material} /> : null
+    )
 }

@@ -2,18 +2,47 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import * as React from 'react';
 import  {SliderValueLabelProps} from '@mui/material/Slider'
-import { RigidBody, Debug } from "@react-three/rapier";
+import { RigidBody, Debug, Physics } from "@react-three/rapier";
 import Tooltip from '@mui/material/Tooltip';
+import {UIType} from './@types'
+import { RoundedBox } from '@react-three/drei';
 
 function PhysicsPlane(props: any) {
   return (
-      <RigidBody rotation={[-Math.PI / 2, 0, 0]} colliders={'cuboid'}>
-        <mesh position={[0, 0, -3]}>
+      <RigidBody type={'fixed'} rotation={[-Math.PI / 2, 0, 0]} colliders={'cuboid'}>
+        {/* <mesh position={[0, 0, -3]}>
           <planeGeometry args={[10, 10]} />
           <meshBasicMaterial color="#171717" transparent opacity={0.2} />
-        </mesh>
+        </mesh> */}
+
+      <RoundedBox scale={[10, 10, 0.1]} smoothness={30} position={[0,0,-3]}>
+        <meshStandardMaterial color="white" />
+      </RoundedBox>
       </RigidBody>
       )
+}
+
+
+function UITypeFunction(props: { type: UIType, pause:boolean, children: React.ReactChild }): React.ReactElement {
+  return (
+    props.type === "physics" ?
+      <Physics paused={props.pause}>
+        {props.children}
+      </Physics>
+      :
+      <>{props.children}</>
+  )
+}
+
+function DynamicObject(props:{type:UIType,children: React.ReactChild}):React.ReactElement{
+  return(
+    props.type==="physics"?
+    <RigidBody colliders={'hull'}>
+      {props.children}
+    </RigidBody>
+    :
+    <>{props.children}</>
+  )
 }
 
 function LabelToolTip(props: SliderValueLabelProps) {
@@ -25,4 +54,4 @@ function LabelToolTip(props: SliderValueLabelProps) {
         </Tooltip>
     );
 }
-export {PhysicsPlane, LabelToolTip}
+export {PhysicsPlane, LabelToolTip, UITypeFunction, DynamicObject}

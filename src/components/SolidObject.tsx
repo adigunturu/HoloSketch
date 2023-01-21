@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import * as React from 'react';
 import { PivotControls, RoundedBox, Plane} from '@react-three/drei';
+import { UIType } from '../@types';
+import { DynamicObject } from '../utilComponents';
 
 
 type canvasFunctionsProps = {
@@ -18,13 +20,10 @@ export default function SolidObject(props: {
     canvasFunctions:canvasFunctionsProps,
     selectedObjectIndexThreeD:string|null,
     keyPressed:string|null,
+    typeToggle:UIType
  }) {
     const transformref = useRef()
     const objectRef = useRef<THREE.Mesh>(null!)
-    useEffect(()=>{//@ts-ignore
-        let vertices = objectRef.current?.geometry.attributes.position.array//@ts-ignore
-        let indices = objectRef.current?.geometry.index?.array;
-    },[])
     const [isDraggingPivot, setDraggingPivot] = useState(false);
     const [initialPosition, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
     useEffect(() => {
@@ -108,6 +107,7 @@ export default function SolidObject(props: {
             index={props.item.index} 
             position={[0, 0, 0]}
             canvasFunctions={props.canvasFunctions}
+            typeToggle={props.typeToggle}
              />
         </PivotControls>
     )
@@ -119,24 +119,27 @@ function Box(props: {
     type: 'cube' | 'sphere' | 'plane', 
     objectRef: React.MutableRefObject<THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>>,
     canvasFunctions:canvasFunctionsProps
+    typeToggle:UIType
  }) {
     return (
-        props.type === 'cube' || props.type === 'sphere' ?  
-            <RoundedBox matrixAutoUpdate={true} scale={props.type === 'sphere' ? [1.4, 1.4, 1.4] : [1, 1, 1]} ref={props.objectRef} onClick={(event) => { 
-                // SelectedObject = props.objectRef.current; 
-                props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
-                props.canvasFunctions.updateSelectedObjectIndexFunction(props.index)
-                // selectedObjectIndex = props.index; 
+        <DynamicObject type={props.typeToggle}>
+            {props.type === 'cube' || props.type === 'sphere' ?
+                <RoundedBox matrixAutoUpdate={true} scale={props.type === 'sphere' ? [1.4, 1.4, 1.4] : [1, 1, 1]} ref={props.objectRef} onClick={(event) => {
+                    // SelectedObject = props.objectRef.current; 
+                    props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
+                    props.canvasFunctions.updateSelectedObjectIndexFunction(props.index)
+                    // selectedObjectIndex = props.index; 
                 }} radius={props.type === 'sphere' ? 0.5 : 0} smoothness={30} {...props}>
-                <meshStandardMaterial color="white" />
-            </RoundedBox> :
-            props.type === 'plane' ? <Plane matrixAutoUpdate={true} ref={props.objectRef} onClick={(event) => { 
-                // SelectedObject = props.objectRef.current; 
-                props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
-                props.canvasFunctions.updateSelectedObjectIndexFunction(props.index)
-                // selectedObjectIndex = props.index; 
+                    <meshStandardMaterial color="white" />
+                </RoundedBox> : <Plane matrixAutoUpdate={true} ref={props.objectRef} onClick={(event) => {
+                    // SelectedObject = props.objectRef.current; 
+                    props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
+                    props.canvasFunctions.updateSelectedObjectIndexFunction(props.index)
+                    // selectedObjectIndex = props.index; 
                 }} args={[2, 2]} {...props}>
-                <meshStandardMaterial transparent={true} opacity={0.9} color="white" />
-            </Plane> : null
+                    <meshStandardMaterial transparent={true} opacity={0.9} color="white" />
+                </Plane>}
+        </DynamicObject>
+       
     )
 }
