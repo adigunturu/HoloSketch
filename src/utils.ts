@@ -48,4 +48,14 @@ function generateGeometry(points:THREE.Vector3Tuple[]){
     }
 }
 
-export {makeid, generateGeometry, getMeshCenterPoint}
+function ApplyMatrixOnMesh(mesh:THREE.Mesh, matrix:THREE.Matrix4){
+    let origin = getMeshCenterPoint(mesh);
+    if (!origin || origin === undefined) {
+        return
+    }
+    mesh.position.set(origin.x, origin.y, origin.z);
+    mesh.geometry.center()
+    mesh.applyMatrix4(matrix);
+}
+
+export {makeid, generateGeometry, getMeshCenterPoint, ApplyMatrixOnMesh}

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import * as React from 'react';
 import { PivotControls, useCursor, useSelect } from "@react-three/drei";
-import { getMeshCenterPoint } from "../../utils";
+import { ApplyMatrixOnMesh, getMeshCenterPoint } from "../../utils";
 import { TubeLine } from "./TubeLine";
 
 export function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed, typeToggle }
@@ -25,7 +25,6 @@ export function TheLine({ points, isDrawing, index, canvasFunctions, transform, 
     const pivotRef = useRef<THREE.Group>(null!)
     const [hovered, hover] = useState(false)
     const [clicked, click] = useState(false)
-    const [LocalTransform, setLocalTransform] = useState<THREE.Matrix4 | undefined>()
     const [initialPosition, setInitialPosition] = useState<THREE.Vector3 | null>(null)
     const [initialScale, setinitialScale] = useState<THREE.Vector3>(new THREE.Vector3(1, 1, 1))
     const [updatedInitialPosition, setUpdatedIntialPosition] = useState<THREE.Vector3 | null>(null)
@@ -40,19 +39,6 @@ export function TheLine({ points, isDrawing, index, canvasFunctions, transform, 
             click(false)
         }
     }, [selected]);
-
-    useEffect(() => {
-        if (LocalTransform !== undefined) {
-            updateTransform(index, LocalTransform)
-        }
-    }, [LocalTransform]);
-
-
-    useEffect(() => {
-        if (transform !== undefined) {
-            ref.current?.applyMatrix4(transform)
-        }
-    }, []);
 
     useEffect(() => {
         if (!isDrawing && !initialPosition && ref.current) {
@@ -108,7 +94,12 @@ export function TheLine({ points, isDrawing, index, canvasFunctions, transform, 
             depthTest={false}
             autoTransform={true}
             // matrix={transform}
-            onDragEnd={() => setLocalTransform(pivotRef.current.matrix)}
+            onDragEnd={() => {
+                updateTransform(index, ref.current.matrix);
+                
+                // ApplyMatrixOnMesh(ref.current, ref.current.matrix)
+                
+            }}
             anchor={[0, 0, 0]}
             visible={clicked}
             disableAxes={!clicked}

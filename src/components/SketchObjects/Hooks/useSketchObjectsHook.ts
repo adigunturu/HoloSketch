@@ -45,7 +45,6 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
     const [transforms, setTransforms] = useState<{ [line: string]: THREE.Matrix4 | undefined }>({})
     // function getPoint(event:React.MouseEvent) {
     useEffect(() => {
-        let zoomLvl = camera.position.distanceTo(new THREE.Vector3());
         if (mousePos.x === 0 && mousePos.y === 0) {
             return
         }
@@ -124,10 +123,8 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
 
 
     useEffect(() => {
-        if (!isDrawing) {
-            console.log(Object.keys(points))
-        }
-    }, [isDrawing])
+        window.localStorage.setItem('transforms',JSON.stringify(transforms))
+    }, [transforms])
 
     return {points, transforms, setSelected, updateTransform}
 }
