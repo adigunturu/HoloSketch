@@ -33,7 +33,7 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
     }, [points])
     useFrame(({ gl, scene, camera }) => {
         if (typeToggle === 'action_trigger') {
-            if (camera.position.distanceTo(objectref.current.position) < 10) {
+            if (camera.position.distanceTo(objectref.current.position) < 5) {
                 let newmaterial = new THREE.MeshBasicMaterial({ color: "#171717" });
                 objectref.current.material = newmaterial
             } else {

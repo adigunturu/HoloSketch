@@ -13,6 +13,7 @@ import ViewController from './components/ViewController';
 import TweenExp from './components/TweenExp';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { Physics } from '@react-three/rapier';
+import { UIType } from './@types';
 
 type canvasFunctionsProps = {
     updateSelected: (index: string | null) => void;
@@ -77,7 +78,7 @@ export default function SketchingCanvas_ObjectLinks() {
         updateSelectedObjectIndexFunction:updateSelectedObjectIndexFunction,
         updateIsObjectSelected:updateIsObjectSelected
     }
-    const [typeToggle, setTypeToggle] = useState<'physics'|'morph'>('morph')
+    const [typeToggle, setTypeToggle] = useState<UIType>('morph')
     const [physicsPaused, setPhysicsPaused] = useState(true)
     return (
         <>
@@ -122,6 +123,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     <ToggleButton value="physics">Physics</ToggleButton>
                     <ToggleButton value="morph">Morph</ToggleButton>
                     <ToggleButton value="transform">Linear Transformation</ToggleButton>
+                    <ToggleButton value="action_trigger">Action Trigger</ToggleButton>
                 </ToggleButtonGroup>
             </div>
 
@@ -217,7 +219,7 @@ export default function SketchingCanvas_ObjectLinks() {
                         {typeToggle==='physics'&&<PhysicsPlane/>}
                     </>
                 </UITypeFunction>
-                    <OrthographicCamera makeDefault zoom={80} position={[10, 4, 4]} />
+                    <PerspectiveCamera makeDefault position={[10, 4, 4]} />
                     <ViewController />
                     <GizmoHelper
                         alignment="bottom-right" // widget alignment within scene

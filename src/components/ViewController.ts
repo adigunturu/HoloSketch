@@ -8,7 +8,7 @@ export default function  ViewController(){
     useEffect(
         () => {
             const controls = new OrbitControls(camera, gl.domElement);
-            controls.enableZoom = true;
+            controls.enableZoom = false;
             controls.enableRotate = true;
             controls.enablePan = true;
             controls.minDistance = 3;
@@ -18,11 +18,16 @@ export default function  ViewController(){
                 MIDDLE: THREE.MOUSE.DOLLY,
                 RIGHT: THREE.MOUSE.ROTATE
             };
-
+            document.addEventListener('wheel',(e)=>{
+                let dist = e.deltaY/1000
+                camera.translateZ(dist)
+                controls.update()
+            })
 
             return () => {
                 controls.dispose();
             };
         }, [camera, gl]);
+        
     return null;
 };
