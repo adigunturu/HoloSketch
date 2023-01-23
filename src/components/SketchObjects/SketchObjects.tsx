@@ -30,7 +30,7 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
             <Select multiple border='#000' onChange={(e) => { setSelected(e) }}>
                 {Object.keys(points).length !== 0 &&
                     Object.keys(points).map((keyIndex, index) => (
-                        <TheLine transformDict={transformDict} key={index}
+                        <TheLine transformDict={transformDict} key={keyIndex}
                             index={keyIndex}
                             canvasFunctions={canvasFunctions}
                             isDrawing={isDrawing}
@@ -43,7 +43,7 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
                     ))
                 }
             </Select>
-            {typeToggle === 'morph' && !isDrawing && Object.keys(points).length >= 2 ?
+            {typeToggle.includes('morph') && !isDrawing && Object.keys(points).length >= 2 ?
                 <TweenExp
                     first={points[Object.keys(points).at(-1) as string] as THREE.Vector3Tuple[]}
                     second={points[Object.keys(points).at(-2) as string] as THREE.Vector3Tuple[]}

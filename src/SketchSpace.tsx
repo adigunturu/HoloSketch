@@ -78,7 +78,7 @@ export default function SketchingCanvas_ObjectLinks() {
         updateSelectedObjectIndexFunction:updateSelectedObjectIndexFunction,
         updateIsObjectSelected:updateIsObjectSelected
     }
-    const [typeToggle, setTypeToggle] = useState<UIType>('morph')
+    const [typeToggle, setTypeToggle] = useState<UIType>(['morph'])
     const [physicsPaused, setPhysicsPaused] = useState(true)
     return (
         <>
@@ -100,7 +100,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     onChange={(e, v) => setDepth(v as number)}
                 />
             </div> */}
-            {typeToggle==='physics'&&<button 
+            {typeToggle.includes('physics')&&<button 
             onClick={()=>setPhysicsPaused(!physicsPaused)}
             style={{
                 position:'absolute',
@@ -114,8 +114,8 @@ export default function SketchingCanvas_ObjectLinks() {
                 <ToggleButtonGroup
                     color="primary"
                     value={typeToggle}
-                    exclusive
                     onChange={(e, newVal) => {
+                        console.log(newVal)
                         setTypeToggle(newVal)
                     }}
                     aria-label="Platform"
@@ -203,7 +203,7 @@ export default function SketchingCanvas_ObjectLinks() {
                         SelectedObject={selectedObjectThreeD}
                         keyPressed={keyPressed}
                     />
-                        {typeToggle!=='morph'&&objectsInScene.map((item) => (
+                        {typeToggle.includes('transform')&&objectsInScene.map((item) => (
                             <SolidObject
                                 updateDraggingTransformObject={updateDraggingTransformObject}
                                 key={item.index}
@@ -216,7 +216,7 @@ export default function SketchingCanvas_ObjectLinks() {
                                 typeToggle={typeToggle}
                             />
                         ))}
-                        {typeToggle==='physics'&&<PhysicsPlane/>}
+                        {typeToggle.includes('physics')&&<PhysicsPlane/>}
                     </>
                 </UITypeFunction>
                     <PerspectiveCamera makeDefault position={[10, 4, 4]} />

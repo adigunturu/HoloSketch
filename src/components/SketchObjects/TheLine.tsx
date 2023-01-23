@@ -5,8 +5,9 @@ import * as React from 'react';
 import { PivotControls, useCursor, useSelect } from "@react-three/drei";
 import { ApplyMatrixOnMesh, getMeshCenterPoint } from "../../utils";
 import { TubeLine } from "./TubeLine";
+import { RigidBody } from '@react-three/rapier';
 
-export function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed, typeToggle }
+export const TheLine = React.memo(function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed, typeToggle }
     : {
         points: THREE.Vector3Tuple[],
         isDrawing: boolean,
@@ -24,6 +25,7 @@ export function TheLine({ points, isDrawing, index, canvasFunctions, transform, 
 
     const pivotRef = useRef<THREE.Group>(null!)
     const [hovered, hover] = useState(false)
+    const [loaded, setLoaded] = useState(false)
     const [clicked, click] = useState(false)
     const [initialPosition, setInitialPosition] = useState<THREE.Vector3 | null>(null)
     const [initialScale, setinitialScale] = useState<THREE.Vector3>(new THREE.Vector3(1, 1, 1))
@@ -41,24 +43,34 @@ export function TheLine({ points, isDrawing, index, canvasFunctions, transform, 
     }, [selected]);
 
     useEffect(() => {
+        if(!isDrawing&&!loaded){
+            setLoaded(true)
+        }
         if (!isDrawing && !initialPosition && ref.current) {
             setTimeout(() => {
                 let origin = getMeshCenterPoint(ref.current as THREE.Mesh);
+                console.log(origin)
                 if (!origin || origin === undefined) {
                     return
                 }
+                console.log(origin)
                 ref.current?.position.set(origin.x, origin.y, origin.z);
                 ref.current?.geometry.center()
                 setInitialPosition(origin);
             }, 10);
         }
+        console.log(index)
     }, [isDrawing])
-
     useEffect(() => {
-        // if(index!==latestStrokeId){
-        //     return
-        // }
-        if (transformDict && ref.current && typeToggle==='transform') {
+        if (transform !== undefined) {
+            ref.current?.applyMatrix4(transform)
+        }
+    }, []);
+    useEffect(() => {
+        if(!typeToggle.includes('transform')){
+            return
+        }
+        if (transformDict && ref.current) {
             if (keyPressed === 'AltLeft' && transformDict.scale !== undefined) {
                 let newScale = initialScale.z + transformDict.scale
                 ref.current.scale.set(newScale, newScale, newScale)
@@ -117,14 +129,17 @@ export function TheLine({ points, isDrawing, index, canvasFunctions, transform, 
                 onPointerOut={() => hover(false)}
             /> */}
 
-            <TubeLine 
-            objectref={ref as React.MutableRefObject<THREE.Mesh>} 
-            points={points} 
-            isDrawing={isDrawing}
-            typeToggle={typeToggle}
-             />
+
+            <TubeLine
+                objectref={ref as React.MutableRefObject<THREE.Mesh>}
+                points={points}
+                isDrawing={isDrawing}
+                typeToggle={typeToggle}
+                key = {loaded?index:`${index}loading`}
+            />
+            
 
 
         </PivotControls>
     )
-}
+})

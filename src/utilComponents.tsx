@@ -25,23 +25,18 @@ function PhysicsPlane(props: any) {
 
 function UITypeFunction(props: { type: UIType, pause:boolean, children: React.ReactChild }): React.ReactElement {
   return (
-    props.type === "physics" ?
-      <Physics paused={props.pause}>
+      <><Physics paused={props.pause}>
         {props.children}
-      </Physics>
-      :
-      <>{props.children}</>
+        {/* <Debug/> */}
+      </Physics></>
   )
 }
 
 function DynamicObject(props:{type:UIType,children: React.ReactChild}):React.ReactElement{
   return(
-    props.type==="physics"?
     <RigidBody colliders={'hull'}>
       {props.children}
     </RigidBody>
-    :
-    <>{props.children}</>
   )
 }
 
