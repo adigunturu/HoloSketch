@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import * as React from 'react';
 import { UIType } from '../../@types';
-import { RigidBody } from '@react-three/rapier';
+import { RigidBody, ConvexHullCollider, BallCollider, RigidBodyProps } from '@react-three/rapier';
 import { useFrame, useThree } from '@react-three/fiber';
 import { getMeshCenterPoint } from '../../utils';
+import { RigidBodyApi } from '@react-three/rapier/dist/declarations/src/types';
 
 export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
     points: THREE.Vector3Tuple[],
@@ -13,10 +14,9 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
 }) {
     const [loaded, setLoaded] = useState(false)
     const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null)
-    
     useEffect(()=>{
         if(!isDrawing&&!loaded){
-            setLoaded(true)
+            setLoaded(true);
         }
     },[isDrawing])
     
@@ -35,7 +35,7 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
                 });
         }
         const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
-        let geometry = new THREE.TubeGeometry(curve, points.length, 0.04, 20);
+        let geometry = new THREE.TubeGeometry(curve, points.length, 0.08, 20);
         const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
         setMesh({ material: material, geometry: geometry });
     }, [points])
@@ -51,11 +51,13 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
         }
     })
 
-    return (mesh&&points.length>5? <RigidBody colliders={'hull'}><mesh ref={objectref}
+    return (mesh&&points.length>5?<RigidBody colliders={loaded?'hull':false}>
+        <mesh ref={objectref}
         castShadow={true}
         receiveShadow={true}
         frustumCulled={true}
         geometry={mesh.geometry}
-        material={mesh.material} /></RigidBody>:null
+        material={mesh.material} />
+        </RigidBody>:null
     )
 }

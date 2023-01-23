@@ -7,7 +7,7 @@ import { ApplyMatrixOnMesh, getMeshCenterPoint } from "../../utils";
 import { TubeLine } from "./TubeLine";
 import { RigidBody } from '@react-three/rapier';
 
-export const TheLine = React.memo(function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed, typeToggle }
+export function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateTransform, transformDict,keyPressed, typeToggle }
     : {
         points: THREE.Vector3Tuple[],
         isDrawing: boolean,
@@ -135,11 +135,11 @@ export const TheLine = React.memo(function TheLine({ points, isDrawing, index, c
                 points={points}
                 isDrawing={isDrawing}
                 typeToggle={typeToggle}
-                key = {loaded?index:`${index}loading`}
+                key={index}
             />
             
 
 
         </PivotControls>
     )
-})
+}

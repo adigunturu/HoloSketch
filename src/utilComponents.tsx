@@ -27,14 +27,14 @@ function UITypeFunction(props: { type: UIType, pause:boolean, children: React.Re
   return (
       <><Physics paused={props.pause}>
         {props.children}
-        {/* <Debug/> */}
+        <Debug/>
       </Physics></>
   )
 }
 
 function DynamicObject(props:{type:UIType,children: React.ReactChild}):React.ReactElement{
   return(
-    <RigidBody colliders={'hull'}>
+    <RigidBody type={'fixed'} colliders={'hull'}>
       {props.children}
     </RigidBody>
   )

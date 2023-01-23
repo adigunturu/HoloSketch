@@ -203,7 +203,7 @@ export default function SketchingCanvas_ObjectLinks() {
                         SelectedObject={selectedObjectThreeD}
                         keyPressed={keyPressed}
                     />
-                        {typeToggle.includes('transform')&&objectsInScene.map((item) => (
+                        {objectsInScene.map((item) => (
                             <SolidObject
                                 updateDraggingTransformObject={updateDraggingTransformObject}
                                 key={item.index}
