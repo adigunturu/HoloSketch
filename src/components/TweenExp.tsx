@@ -1,4 +1,3 @@
-import * as TWEEN from '@tweenjs/tween.js'
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import * as React from 'react';
