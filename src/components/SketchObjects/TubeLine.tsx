@@ -51,13 +51,22 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
         }
     })
 
-    return (mesh&&points.length>5?<RigidBody colliders={loaded?'hull':false}>
+    return (mesh&&
+        points.length>5&&
+        typeToggle.includes('physics') ? <RigidBody mass={10000} colliders={loaded ? 'hull' : false}>
         <mesh ref={objectref}
+            castShadow={true}
+            receiveShadow={true}
+            frustumCulled={true}
+            geometry={mesh.geometry}
+            material={mesh.material} />
+    </RigidBody>
+        :mesh?<mesh ref={objectref}
         castShadow={true}
         receiveShadow={true}
         frustumCulled={true}
         geometry={mesh.geometry}
         material={mesh.material} />
-        </RigidBody>:null
+        :null
     )
 }

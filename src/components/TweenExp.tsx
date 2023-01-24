@@ -951,7 +951,7 @@ function getGeometry(points: number[][]) {
             });
     }
     const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
-    let geometry = new THREE.TubeGeometry(curve, points.length, 0.04, 20);
+    let geometry = new THREE.TubeGeometry(curve, points.length, 0.08, 20);
     const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
     return { geometry, material }
 }

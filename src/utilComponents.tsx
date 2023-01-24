@@ -9,13 +9,13 @@ import { RoundedBox } from '@react-three/drei';
 
 function PhysicsPlane(props: any) {
   return (
-      <RigidBody type={'fixed'} rotation={[-Math.PI / 2, 0, 0]} colliders={'cuboid'}>
+      <RigidBody position={[0,-3,0]} type={'fixed'}  colliders={'cuboid'}>
         {/* <mesh position={[0, 0, -3]}>
           <planeGeometry args={[10, 10]} />
           <meshBasicMaterial color="#171717" transparent opacity={0.2} />
         </mesh> */}
 
-      <RoundedBox scale={[10, 10, 0.1]} smoothness={30} position={[0,0,-3]}>
+      <RoundedBox args={[10,0.08,10]} smoothness={30}>
         <meshStandardMaterial color="white" />
       </RoundedBox>
       </RigidBody>
@@ -25,18 +25,20 @@ function PhysicsPlane(props: any) {
 
 function UITypeFunction(props: { type: UIType, pause:boolean, children: React.ReactChild }): React.ReactElement {
   return (
-      <><Physics paused={props.pause}>
+      props.type.includes('physics')?
+      <Physics paused={props.pause}>
         {props.children}
-        <Debug/>
-      </Physics></>
+        {/* <Debug/> */}
+      </Physics>:<>{props.children}</>
   )
 }
 
 function DynamicObject(props:{type:UIType,children: React.ReactChild}):React.ReactElement{
   return(
-    <RigidBody type={'fixed'} colliders={'hull'}>
+    props.type.includes('physics')?
+    <RigidBody colliders={'hull'}>
       {props.children}
-    </RigidBody>
+    </RigidBody>:<>{props.children}</>
   )
 }
 

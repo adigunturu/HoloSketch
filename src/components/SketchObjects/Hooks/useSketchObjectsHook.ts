@@ -98,6 +98,20 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
     //         setTransforms(loadLines.transforms);
     //     }
     // }, [loadLines])
+    
+    useEffect(()=>{
+        if(Object.keys(points).length>0){
+            window.sessionStorage.setItem('points',JSON.stringify(points))
+        }
+    },[points])
+
+    useEffect(()=>{
+        let storagepoints = window.sessionStorage.getItem('points')
+        if(typeToggle&&storagepoints!==null){
+            setPoints(JSON.parse(storagepoints))
+        }
+    },[typeToggle])
+
 
     useEffect(() => {
         setRenderPoints([]);

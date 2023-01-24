@@ -124,7 +124,7 @@ function Box(props: {
     return (
         <DynamicObject type={props.typeToggle}>
             {props.type === 'cube' || props.type === 'sphere' ?
-                <RoundedBox args={[10,0.8,10]} matrixAutoUpdate={true} scale={props.type === 'sphere' ? [1.4, 1.4, 1.4] : [1, 1, 1]} ref={props.objectRef} onClick={(event) => {
+                <RoundedBox args={[1,1,1]} matrixAutoUpdate={true} scale={props.type === 'sphere' ? [1.4, 1.4, 1.4] : [1, 1, 1]} ref={props.objectRef} onClick={(event) => {
                     // SelectedObject = props.objectRef.current; 
                     props.canvasFunctions.updateSelectedObjectFunction(props.objectRef.current)
                     props.canvasFunctions.updateSelectedObjectIndexFunction(props.index)
