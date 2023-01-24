@@ -78,7 +78,7 @@ export default function SketchingCanvas_ObjectLinks() {
         updateSelectedObjectIndexFunction:updateSelectedObjectIndexFunction,
         updateIsObjectSelected:updateIsObjectSelected
     }
-    const [typeToggle, setTypeToggle] = useState<UIType>(['morph'])
+    const [typeToggle, setTypeToggle] = useState<UIType>(['action_trigger'])
     const [physicsPaused, setPhysicsPaused] = useState(true)
     return (
         <>
@@ -203,7 +203,7 @@ export default function SketchingCanvas_ObjectLinks() {
                         SelectedObject={selectedObjectThreeD}
                         keyPressed={keyPressed}
                     />
-                        {objectsInScene.map((item) => (
+                        {typeToggle.includes('transform')&&objectsInScene.map((item) => (
                             <SolidObject
                                 updateDraggingTransformObject={updateDraggingTransformObject}
                                 key={item.index}

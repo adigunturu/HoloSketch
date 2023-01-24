@@ -12,8 +12,10 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
     objectref: React.MutableRefObject<THREE.Mesh>,
     isDrawing: boolean, typeToggle: UIType
 }) {
-    const [loaded, setLoaded] = useState(false)
-    const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null)
+    const [loaded, setLoaded] = useState(false);
+    const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null);
+    const [triggered, setTriggered] = useState(false);
+    
     useEffect(()=>{
         if(!isDrawing&&!loaded){
             setLoaded(true);
@@ -40,20 +42,24 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
         setMesh({ material: material, geometry: geometry });
     }, [points])
     useFrame(({ gl, scene, camera }) => {
+        
         if (typeToggle.includes('action_trigger')&&objectref.current) {
-            if (camera.position.distanceTo(objectref.current.position) < 5) {
+            if (camera.position.distanceTo(objectref.current.position) < 10) {
+                console.log(objectref.current.position)
                 let newmaterial = new THREE.MeshBasicMaterial({ color: "#171717" });
                 objectref.current.material = newmaterial
+                setTriggered(true)
             } else {
-                let newmaterial = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+                const newmaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
                 objectref.current.material = newmaterial
+                setTriggered(false)
             }
         }
     })
 
     return (mesh&&
         points.length>5&&
-        typeToggle.includes('physics') ? <RigidBody mass={10000} colliders={loaded ? 'hull' : false}>
+        typeToggle.includes('physics') ? <RigidBody type={triggered?'dynamic':'fixed'} mass={10000} colliders={loaded ? 'hull' : false}>
         <mesh ref={objectref}
             castShadow={true}
             receiveShadow={true}

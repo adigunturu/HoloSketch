@@ -49,11 +49,9 @@ export function TheLine({ points, isDrawing, index, canvasFunctions, transform, 
         if (!isDrawing && !initialPosition && ref.current) {
             setTimeout(() => {
                 let origin = getMeshCenterPoint(ref.current as THREE.Mesh);
-                console.log(origin)
                 if (!origin || origin === undefined) {
                     return
                 }
-                console.log(origin)
                 ref.current?.position.set(origin.x, origin.y, origin.z);
                 ref.current?.geometry.center()
                 setInitialPosition(origin);
@@ -61,6 +59,22 @@ export function TheLine({ points, isDrawing, index, canvasFunctions, transform, 
         }
         console.log(index)
     }, [isDrawing])
+
+
+
+    //for setting the positions of loaded objects
+    useEffect(()=>{
+        setTimeout(() => {
+            let origin = getMeshCenterPoint(ref.current as THREE.Mesh);
+            if (!origin || origin === undefined) {
+                return
+            }
+            ref.current?.position.set(origin.x, origin.y, origin.z);
+            ref.current?.geometry.center()
+            setInitialPosition(origin);
+        }, 10);
+    },[typeToggle])
+
     useEffect(() => {
         if (transform !== undefined) {
             ref.current?.applyMatrix4(transform)
