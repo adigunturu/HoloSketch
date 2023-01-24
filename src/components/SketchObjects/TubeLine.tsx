@@ -45,7 +45,6 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
         
         if (typeToggle.includes('action_trigger')&&objectref.current) {
             if (camera.position.distanceTo(objectref.current.position) < 10) {
-                console.log(objectref.current.position)
                 let newmaterial = new THREE.MeshBasicMaterial({ color: "#171717" });
                 objectref.current.material = newmaterial
                 setTriggered(true)
