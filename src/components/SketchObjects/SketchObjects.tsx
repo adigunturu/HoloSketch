@@ -23,7 +23,7 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
         keyPressed: string | null
     }) {
     
-       const{points, transforms, setSelected, updateTransform} = useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, deleteLine, typeToggle, objectsInScene, transformDict, SelectedObject, keyPressed})
+       const{points, transforms, setSelected, updateTransform, lineFullyDrawn} = useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, canvasFunctions, deleteLine, typeToggle, objectsInScene, transformDict, SelectedObject, keyPressed})
 
     return (
         <>
@@ -38,6 +38,7 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
                             updateTransform={updateTransform}
                             transform={transforms[keyIndex]}
                             keyPressed={keyPressed}
+                            lineFullyDrawn={lineFullyDrawn}
                             typeToggle={typeToggle}
                         />
                     ))

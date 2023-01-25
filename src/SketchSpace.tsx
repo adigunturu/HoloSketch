@@ -31,6 +31,7 @@ export default function SketchingCanvas_ObjectLinks() {
     const [depth, setDepth] = useState(0);
     const [Selected, setSelected] = useState<string | null>(null);
     const [deleteLine, setDeleteLine] = useState<string | null>(null);
+    const [lineFullyDrawn, setLineFullyDrawn] = useState<{[line:string]:boolean}>({});
     const [transformDict, setTransformDict] = useState<{ RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion } | null>(null);
     const [loadLines, setLoadLines] = useState<{
         points: {
@@ -178,6 +179,7 @@ export default function SketchingCanvas_ObjectLinks() {
                         setLine(NewLineID);
                     }
                     setIsDrawing(false)
+                    
                 }}
                 onMouseMove={(e) => {
                     if (isObjectSelected) {
@@ -186,6 +188,7 @@ export default function SketchingCanvas_ObjectLinks() {
                     if (isMouseDown) {
                         setMousePoint({ x: e.clientX, y: e.clientY });
                         setIsDrawing(true)
+                        // setLineBeingDrawn(lineNumber)
                     }
                 }}
             >

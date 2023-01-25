@@ -42,6 +42,7 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
     const { camera, scene } = useThree();
     const [renderPoints, setRenderPoints] = useState<Array<THREE.Vector3Tuple | undefined>>([]);
     const [points, setPoints] = useState<{ [line: string]: Array<THREE.Vector3Tuple | undefined> }>({})
+    const [lineFullyDrawn, setLineFullyDrawn] = useState<{[line:string]:boolean}>({});
     const [transforms, setTransforms] = useState<{ [line: string]: THREE.Matrix4 | undefined }>({})
     // function getPoint(event:React.MouseEvent) {
     useEffect(() => {
@@ -50,6 +51,16 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
         }
         mouse.x = (mousePos.x / window.innerWidth) * 2 - 1;
         mouse.y = -(mousePos.y / window.innerHeight) * 2 + 1;
+
+        if(lineNumber){
+            setLineFullyDrawn((prev) => (
+                {
+                    ...prev,
+                    [lineNumber as string]: false
+                }
+            ))
+        }
+
 
         if (SelectedObject) {
             raycaster.setFromCamera(mouse, camera);
@@ -61,7 +72,7 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
                     setRenderPoints((prev) => [...prev, tempPoint]);
                     let temparr = renderPoints;
                     temparr.push(tempPoint);
-                    if (lineNumber) {
+                    if (lineNumber&&temparr.length>2) {
                         setPoints((prev) => ({ ...prev, [lineNumber]: temparr }))
                     }
                 }
@@ -77,7 +88,7 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
         setRenderPoints((prev) => [...prev, tempPoint]);
         let temparr = renderPoints;
         temparr.push(tempPoint);
-        if (lineNumber) {
+        if (lineNumber&&temparr.length>2) {
             setPoints((prev) => ({ ...prev, [lineNumber]: temparr }))
         }
     }, [mousePos]);
@@ -115,6 +126,12 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
 
     useEffect(() => {
         setRenderPoints([]);
+        //line completly drawn
+        Object.keys(lineFullyDrawn).forEach((line)=>{
+            if(lineFullyDrawn[line]===false){
+                setLineFullyDrawn((prev)=>({...prev, [line]:true}))
+            }
+        })
     }, [lineNumber]);
 
     const [selected, setSelected] = React.useState<Object3D[]>([])
@@ -140,5 +157,5 @@ export function useSketchObjectsHook({ mousePos, lineNumber, depth, isDrawing, c
         window.localStorage.setItem('transforms',JSON.stringify(transforms))
     }, [transforms])
 
-    return {points, transforms, setSelected, updateTransform}
+    return {points, transforms, setSelected, updateTransform, lineFullyDrawn}
 }

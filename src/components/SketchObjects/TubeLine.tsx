@@ -16,12 +16,6 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
     const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null);
     const [triggered, setTriggered] = useState(false);
     
-    useEffect(()=>{
-        if(!isDrawing&&!loaded){
-            setLoaded(true);
-        }
-    },[isDrawing])
-    
     useEffect(() => {
         if (!points || points === undefined || points.length === 0 || points.length < 5) {
             return
@@ -41,37 +35,12 @@ export function TubeLine({ points, objectref, isDrawing, typeToggle }: {
         const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
         setMesh({ material: material, geometry: geometry });
     }, [points])
-    useFrame(({ gl, scene, camera }) => {
-        
-        if (typeToggle.includes('action_trigger')&&objectref.current) {
-            if (camera.position.distanceTo(objectref.current.position) < 10) {
-                let newmaterial = new THREE.MeshBasicMaterial({ color: "#171717" });
-                objectref.current.material = newmaterial
-                setTriggered(true)
-            } else {
-                const newmaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-                objectref.current.material = newmaterial
-                setTriggered(false)
-            }
-        }
-    })
 
-    return (mesh&&
-        points.length>5&&
-        typeToggle.includes('physics') ? <RigidBody type={triggered?'dynamic':'fixed'} mass={10000} colliders={loaded ? 'hull' : false}>
-        <mesh ref={objectref}
-            castShadow={true}
-            receiveShadow={true}
-            frustumCulled={true}
-            geometry={mesh.geometry}
-            material={mesh.material} />
-    </RigidBody>
-        :mesh?<mesh ref={objectref}
+    return (mesh&&<mesh ref={objectref}
         castShadow={true}
         receiveShadow={true}
         frustumCulled={true}
         geometry={mesh.geometry}
         material={mesh.material} />
-        :null
     )
 }
