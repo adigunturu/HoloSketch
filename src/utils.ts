@@ -58,4 +58,25 @@ function ApplyMatrixOnMesh(mesh:THREE.Mesh, matrix:THREE.Matrix4){
     mesh.applyMatrix4(matrix);
 }
 
+export function calculateSecondObjectPosition(
+    newFirstObjectPosition:[number,number,number], 
+    originalFirstObjectPosition:THREE.Vector3, 
+    originalSecondObjectPosition:THREE.Vector3) {
+
+       let firstObjPos = new THREE.Vector3(newFirstObjectPosition[0],newFirstObjectPosition[1],newFirstObjectPosition[2])
+
+    //Vector to store the direction between the two objects
+    var direction = new THREE.Vector3();
+    //Vector to store the position of the second object
+    var secondObjectPosition = new THREE.Vector3();
+    //Calculate the direction between the two objects
+    direction.subVectors(originalSecondObjectPosition, originalFirstObjectPosition);
+    //Normalize the direction vector
+    direction.normalize();
+    //Calculate the position of the second object by adding the direction vector to the new first object position multiplied by the distance
+    secondObjectPosition.copy(firstObjPos).add(direction.multiplyScalar(originalFirstObjectPosition.distanceTo(originalSecondObjectPosition)));
+    //Return the position of the second object
+    return secondObjectPosition;
+}
+
 export {makeid, generateGeometry, getMeshCenterPoint, ApplyMatrixOnMesh}

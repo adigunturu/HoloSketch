@@ -12,28 +12,28 @@ export const LoadedTubeLine = React.memo(function LoadedTubeLine({ points, objec
     objectref: React.MutableRefObject<THREE.Mesh>, typeToggle: UIType
 }) {
     const [loaded, setLoaded] = useState(false);
-    const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry } | null>(null);
+    const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry, position:THREE.Vector3 } | null>(null);
     const [triggered, setTriggered] = useState(false);
     const [position, setPosition] = useState(new THREE.Vector3());
 
     useEffect(() => {
         if(loaded)return
         setTimeout(() => {
-            let origin = getMeshCenterPoint(objectref.current as THREE.Mesh);
-            if (!origin || origin === undefined) {
-                return
-            }
+            // let origin = getMeshCenterPoint(objectref.current as THREE.Mesh);
+            // if (!origin || origin === undefined) {
+            //     return
+            // }
             // objectref.current?.position.set(origin.x, origin.y, origin.z);
             // objectref.current?.geometry.center()
-            setPosition(origin)
-                objectref.current?.geometry.center()
+            // setPosition(origin)
+                // objectref.current?.geometry.center()
         }, 10);
         setLoaded(true)
     }, [objectref])
     
-    useEffect(()=>{
-        // objectref.current?.geometry.center()
-    },[position])
+    // useEffect(()=>{
+    //     // objectref.current?.geometry.center()
+    // },[position])
 
     useEffect(() => {
         if (!points || points === undefined || points.length === 0 || points.length < 5) {
@@ -51,8 +51,12 @@ export const LoadedTubeLine = React.memo(function LoadedTubeLine({ points, objec
         }
         const curve = new THREE.CatmullRomCurve3(filteredPoints, false, 'centripetal', 0);
         let geometry = new THREE.TubeGeometry(curve, points.length, 0.08, 20);
+        geometry.computeBoundingBox()
+        var center = new THREE.Vector3();
+        geometry.boundingBox?.getCenter(center);
+        geometry.center()
         const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-        setMesh({ material: material, geometry: geometry });
+        setMesh({ material: material, geometry: geometry, position:center });
     }, [points])
     useFrame(({ gl, scene, camera }) => {
         
@@ -73,14 +77,14 @@ export const LoadedTubeLine = React.memo(function LoadedTubeLine({ points, objec
         points.length>5&&
         typeToggle.includes('physics') ? 
         <RigidBody type={triggered?'dynamic':'fixed'} mass={10000} colliders={loaded ? 'hull' : false}>
-        <mesh position={position} ref={objectref}
+        <mesh position={mesh.position} ref={objectref}
             castShadow={true}
             receiveShadow={true}
             frustumCulled={true}
             geometry={mesh.geometry}
             material={mesh.material} />
     </RigidBody>
-        :mesh?<mesh position={position} ref={objectref}
+        :mesh?<mesh position={mesh.position} ref={objectref}
         castShadow={true}
         receiveShadow={true}
         frustumCulled={true}
