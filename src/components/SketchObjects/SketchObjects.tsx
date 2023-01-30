@@ -18,7 +18,13 @@ export default function SketchObjects({ mousePos, lineNumber, depth, isDrawing, 
         deleteLine: string | null,
         typeToggle: UIType,
         objectsInScene: { index: string, type: 'plane' | 'cube' | 'sphere' }[],
-        transformDict: { RelPos: [x: number, y: number, z: number, distance: number, direction: THREE.Vector3], rotation: THREE.Quaternion } | null,
+        transformDict: { 
+            RelPos: [x: number, y: number, z: number, distance: number, direction: THREE.Vector3], 
+            rotation: THREE.Quaternion,
+            scale?: number,
+            objectOldPosition: THREE.Vector3,
+            objectPosition: THREE.Vector3,
+        } | null,
         SelectedObject: THREE.Mesh | null,
         keyPressed: string | null
     }) {

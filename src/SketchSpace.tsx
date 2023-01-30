@@ -32,7 +32,11 @@ export default function SketchingCanvas_ObjectLinks() {
     const [Selected, setSelected] = useState<string | null>(null);
     const [deleteLine, setDeleteLine] = useState<string | null>(null);
     const [lineFullyDrawn, setLineFullyDrawn] = useState<{[line:string]:boolean}>({});
-    const [transformDict, setTransformDict] = useState<{ RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion } | null>(null);
+    const [transformDict, setTransformDict] = useState<{ 
+        objectPosition:THREE.Vector3,
+        objectOldPosition:THREE.Vector3,
+        RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], 
+        rotation: THREE.Quaternion } | null>(null);
     const [loadLines, setLoadLines] = useState<{
         points: {
             [line: string]: Array<THREE.Vector3Tuple | undefined>
@@ -61,7 +65,13 @@ export default function SketchingCanvas_ObjectLinks() {
         setSelectedObjectIndex(null)
         updateSelectedObjectFunction(null)
     };
-    function updateDraggingTransformObject(object: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null, nullify = false) {
+    function updateDraggingTransformObject(object: { 
+        objectOldPosition:THREE.Vector3,
+        objectPosition:THREE.Vector3,
+        RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], 
+        rotation: THREE.Quaternion, 
+        scale?: number 
+    } | null, nullify = false) {
         if (!nullify) {
             setTransformDict(object)
         } else {

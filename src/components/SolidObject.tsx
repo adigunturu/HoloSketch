@@ -57,13 +57,27 @@ export default function SolidObject(props: {
                 props.updateDraggingTransformObject(null, true)
             }}
             onDrag={(l, dl, w, dw) => {
-                let objectTransformObject: { RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], rotation: THREE.Quaternion, scale?: number } | null = null;
+                let objectTransformObject: { 
+                    RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], 
+                    rotation: THREE.Quaternion,
+                    scale?: number,
+                    objectOldPosition: THREE.Vector3,
+                    objectPosition: THREE.Vector3,
+                } | null = null;
                 if (props.keyPressed === 'AltLeft') {
                     let quartn = new THREE.Quaternion()
                     let vec = new THREE.Vector3()
                     let scale = new THREE.Vector3()
                     l.decompose(vec, quartn, scale);
-                    objectTransformObject = { RelPos: [0, 0, 0, 0, new THREE.Vector3()], rotation: quartn, scale: 0 - (initialPosition?.z - vec.z) };
+                    let newvec = new THREE.Vector3()
+                    objectRef.current.getWorldPosition(newvec)
+                    objectTransformObject = { 
+                        RelPos: [0, 0, 0, 0, new THREE.Vector3()], 
+                        rotation: quartn, 
+                        scale: 0 - (initialPosition?.z - vec.z),
+                        objectOldPosition:initialPosition,
+                        objectPosition:newvec
+                    };
                     props.updateDraggingTransformObject(objectTransformObject)
                     return
                 }
@@ -77,10 +91,12 @@ export default function SolidObject(props: {
                 var tempQuat = new THREE.Quaternion();
                 var temp = new THREE.Vector3();
                 objectRef.current?.getWorldPosition(tempVec)
+                objectRef.current?.getWorldPosition(temp)
+                // console.log(temp)
                 // console.log(objectRef.current.getWorldPosition(tempVec))
                 let distance = tempVec.distanceTo(initialPosition as THREE.Vector3)
                 objectRef.current?.getWorldQuaternion(rotation);
-                console.log(rotation)
+                // console.log(rotation)
                 let TransformedVector = new THREE.Vector3();
                 TransformedVector = TransformedVector?.addVectors(initialPosition as THREE.Vector3, tempVec.subVectors(tempVec, initialPosition as THREE.Vector3).normalize().multiplyScalar(distance));
                 if (rotation.x !== 0 || rotation.y !== 0 || rotation.z !== 0) {
@@ -88,7 +104,12 @@ export default function SolidObject(props: {
                     TransformedVector.y = 0;
                     TransformedVector.z = 0;
                 }//@ts-ignore
-                objectTransformObject = { RelPos: [TransformedVector.x, TransformedVector.y, TransformedVector.z, distance, tempVec.subVectors(tempVec, initialPosition as THREE.Vector3).normalize()], rotation: rotation };
+                objectTransformObject = { 
+                    RelPos: [TransformedVector.x, TransformedVector.y, TransformedVector.z, distance, tempVec.subVectors(tempVec, initialPosition as THREE.Vector3).normalize()], 
+                    rotation: rotation,
+                    objectOldPosition:initialPosition,
+                    objectPosition:temp
+                };
                 props.updateDraggingTransformObject(objectTransformObject)
             }}
             fixed={true}

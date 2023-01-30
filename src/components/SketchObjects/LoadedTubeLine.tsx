@@ -4,36 +4,51 @@ import * as React from 'react';
 import { UIType } from '../../@types';
 import { RigidBody, ConvexHullCollider, BallCollider, RigidBodyProps } from '@react-three/rapier';
 import { useFrame, useThree } from '@react-three/fiber';
-import { getMeshCenterPoint } from '../../utils';
+import { calculateSecondObjectPosition, getMeshCenterPoint } from '../../utils';
 import { RigidBodyApi } from '@react-three/rapier/dist/declarations/src/types';
 
-export const LoadedTubeLine = React.memo(function LoadedTubeLine({ points, objectref, typeToggle }: {
+export function LoadedTubeLine({ points, objectref, typeToggle, transformDict }: {
     points: THREE.Vector3Tuple[],
-    objectref: React.MutableRefObject<THREE.Mesh>, typeToggle: UIType
+    objectref: React.MutableRefObject<THREE.Mesh>, typeToggle: UIType,
+    transformDict: { 
+        RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], 
+        rotation: THREE.Quaternion, 
+        scale?: number,
+        objectOldPosition: THREE.Vector3,
+        objectPosition: THREE.Vector3,
+    } | null,
 }) {
     const [loaded, setLoaded] = useState(false);
     const [mesh, setMesh] = useState<{ material: THREE.Material, geometry: THREE.TubeGeometry, position:THREE.Vector3 } | null>(null);
     const [triggered, setTriggered] = useState(false);
-    const [position, setPosition] = useState(new THREE.Vector3());
+    const [scale, setScale] = useState(new THREE.Vector3(1,1,1));
+    const [initialPosition, setInitialPosition] = useState(new THREE.Vector3());
 
-    useEffect(() => {
-        if(loaded)return
-        setTimeout(() => {
-            // let origin = getMeshCenterPoint(objectref.current as THREE.Mesh);
-            // if (!origin || origin === undefined) {
-            //     return
-            // }
-            // objectref.current?.position.set(origin.x, origin.y, origin.z);
-            // objectref.current?.geometry.center()
-            // setPosition(origin)
-                // objectref.current?.geometry.center()
-        }, 10);
-        setLoaded(true)
-    }, [objectref])
-    
-    // useEffect(()=>{
-    //     // objectref.current?.geometry.center()
-    // },[position])
+    useEffect(()=>{
+        console.log(transformDict,mesh)
+        if(transformDict&&mesh){
+            if (transformDict.scale !== undefined) {
+                let newScale = scale.z+transformDict.scale;
+                objectref.current.scale.set(newScale, newScale, newScale)
+                return
+            }
+            let TransformedVector = calculateSecondObjectPosition(transformDict.objectPosition,transformDict.objectOldPosition,initialPosition)
+            let tempMesh = mesh;
+            tempMesh.position = TransformedVector
+            setMesh(tempMesh)
+            objectref.current.setRotationFromQuaternion(transformDict?.rotation)
+        }else{
+            if(objectref.current){//updates on transformdict end
+                let tempScale = new THREE.Vector3()
+                objectref.current?.getWorldScale(tempScale)
+                setScale(tempScale);
+                let tempPosition = new THREE.Vector3()
+                objectref.current?.getWorldPosition(tempPosition)
+                setInitialPosition(tempPosition)
+            }
+        }
+    },[transformDict])
+
 
     useEffect(() => {
         if (!points || points === undefined || points.length === 0 || points.length < 5) {
@@ -57,7 +72,10 @@ export const LoadedTubeLine = React.memo(function LoadedTubeLine({ points, objec
         geometry.center()
         const material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide });
         setMesh({ material: material, geometry: geometry, position:center });
+        setInitialPosition(center)
     }, [points])
+
+
     useFrame(({ gl, scene, camera }) => {
         
         if (typeToggle.includes('action_trigger')&&objectref.current) {
@@ -92,12 +110,32 @@ export const LoadedTubeLine = React.memo(function LoadedTubeLine({ points, objec
         material={mesh.material} />
         :null
     )
-},isSame)
+}
 
 function isSame(prev:{
     points: THREE.Vector3Tuple[],
-    objectref: React.MutableRefObject<THREE.Mesh>, typeToggle: UIType
+    objectref: React.MutableRefObject<THREE.Mesh>, typeToggle: UIType,
+    transformDict: { 
+        RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], 
+        rotation: THREE.Quaternion, 
+        scale?: number,
+        objectOldPosition: THREE.Vector3,
+        objectPosition: THREE.Vector3,
+    } | null,
 },next:{
     points: THREE.Vector3Tuple[],
-    objectref: React.MutableRefObject<THREE.Mesh>, typeToggle: UIType
-}){return true}
+    objectref: React.MutableRefObject<THREE.Mesh>, typeToggle: UIType,
+    transformDict: { 
+        RelPos: [x:number, y:number, z:number, distance:number, direction:THREE.Vector3], 
+        rotation: THREE.Quaternion, 
+        scale?: number,
+        objectOldPosition: THREE.Vector3,
+        objectPosition: THREE.Vector3,
+    } | null,
+}){
+    if(prev.transformDict===next.transformDict){
+        return false
+    }else{
+        return true
+    }
+}

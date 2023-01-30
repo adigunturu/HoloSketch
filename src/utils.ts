@@ -59,11 +59,12 @@ function ApplyMatrixOnMesh(mesh:THREE.Mesh, matrix:THREE.Matrix4){
 }
 
 export function calculateSecondObjectPosition(
-    newFirstObjectPosition:[number,number,number], 
+    newFirstObjectPosition:THREE.Vector3, 
     originalFirstObjectPosition:THREE.Vector3, 
     originalSecondObjectPosition:THREE.Vector3) {
 
-       let firstObjPos = new THREE.Vector3(newFirstObjectPosition[0],newFirstObjectPosition[1],newFirstObjectPosition[2])
+    //    let firstObjPos = new THREE.Vector3(newFirstObjectPosition[0],newFirstObjectPosition[1],newFirstObjectPosition[2])
+       let firstObjPos = newFirstObjectPosition
 
     //Vector to store the direction between the two objects
     var direction = new THREE.Vector3();
