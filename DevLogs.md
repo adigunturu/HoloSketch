@@ -1,7 +1,7 @@
 # Logging Updates and ToDos
 
 ### ToDos
- - Transform Controls: Directly set position instead of mental gymnastics
+ - Transform Controls: Directly set position instead of mental gymnastics✅
  - Make more hooks and reduce code complexity
  - Experiement with React-XR
  - Group Sketeches
