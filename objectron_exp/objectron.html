@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.6/control_utils.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.6/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/objectron/objectron.js" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" type="text/css" href="objectron.css" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container">
+        <video class="input_video"></video>
+        <div class="canvas-container">
+        <canvas class="output_canvas" width="1280px" height="720px">
+        </canvas>
+        </div>
+        <div class="loading">
+          <div class="spinner"></div>
+          <div class="message">
+            Loading
+          </div>
+        </div>
+        <div class="shoutout">
+        </div>
+      </div>
+      <div class="control-panel">
+      </div>
+<div id="three"></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.119.1/build/three.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.118.3/examples/js/loaders/OBJLoader.js"></script>
+<script type="'module" src="https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js"></script>
+
+<script src="./objectron.js" type="module"></script>
+</body>
+
+</html>
