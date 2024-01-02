@@ -127,7 +127,16 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
   const [clicked, click] = useState(false)
   const [LocalTransform, setLocalTransform] = useState<THREE.Matrix4 | undefined>()
   const selected = useSelect();
-  useCursor(hovered)
+  useCursor(hovered);
+  const [isDraggingPivot, setDraggingPivot] = useState(false);
+  useEffect(() => {
+    if (isDraggingPivot) {
+      objectClicked = true;
+    } else {
+      objectClicked = false
+    }
+  }, [isDraggingPivot]);
+
   useEffect(() => {
     // console.log(selected[0], selected[0]===ref.current);
     if (selected[0] === ref.current) {
@@ -157,12 +166,13 @@ function TheLine({ points, isDrawing, index, canvasFunctions, transform, updateT
   return (
     <PivotControls
       ref={pivotRef}
+      onDragStart={() => setDraggingPivot(true)}
       fixed={true}
       scale={60}
       depthTest={false}
       autoTransform={true}
       // matrix={transform}
-      onDragEnd={() => setLocalTransform(pivotRef.current.matrix)}
+      onDragEnd={() => {setLocalTransform(pivotRef.current.matrix); setDraggingPivot(false)}}
       anchor={[0, 0, 0]}
       visible={clicked}
       disableAxes={!clicked}
