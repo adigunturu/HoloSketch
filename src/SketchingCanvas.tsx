@@ -512,7 +512,15 @@ export default function SketchingCanvas() {
           </IconButton>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-          <div style={{ display: 'flex', paddingTop: '20px', flexDirection: 'column', justifyContent: 'space-around', width: '100%', height: '100%', alignItems: 'center', overflow: 'scroll' }}>
+          <div style={{ display: 'flex', paddingTop: '20px', flexDirection: 'column', width: '100%', height: '100%', alignItems: 'center', overflow: 'scroll' }}>
+            <div style={{ display: 'flex', padding: '10px', width: '50vh', alignItems: 'center' }}>
+              <img style={{ width: '40px', height: '40px' }} src={require("./assets/bulb.png")} />
+              <p style={{ margin: 0, marginLeft: '10px' }}>You can also sketch on top of 3d Objects just select the object and start sketching on it's surface. Move the object away after sketching if you just want the sketch (Like sketching on cube).</p>
+            </div>
+            <div style={{ display: 'flex', padding: '10px', width: '50vh', alignItems: 'center' }}>
+              <img style={{ width: '40px', height: '40px' }} src={require("./assets/d.png")} />
+              <p style={{ margin: 0, marginLeft: '10px' }}>Press 'd' to delete object or a line</p>
+            </div>
             <div style={{ display: 'flex', padding: '10px', width: '50vh', alignItems: 'center' }}>
               <img style={{ width: '40px', height: '40px' }} src={require("./assets/leftMouse.png")} />
               <p style={{ margin: 0, marginLeft: '10px' }}>Click and drag to start sketching anywhere. Your drawings will be added to this scene. Additionally, you can click on any line and change it's position or rotation. While a line is selected, press the delete key to remove it.</p>
@@ -712,7 +720,7 @@ function BaseObject(props: { item: { type: 'sphere' | 'cube' | 'plane'; index: s
    onMouseDown={()=>setDraggingPivot(true)}
     onMouseUp={()=>setDraggingPivot(false)}
     mode="scale"> */}
-      <Box type={props.item.type} index={props.item.index} position={[-1, 0, 0]} />
+      <Box type={props.item.type} index={props.item.index} position={[0, 0, 0]} />
       {/* // </TransformControls> */}
     </PivotControls>
   )
